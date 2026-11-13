@@ -1,0 +1,126 @@
+<resources>
+    <string name="app_name">CodeQuest</string>
+
+    <!-- Navigation -->
+    <string name="nav_learn">Learn</string>
+    <string name="nav_progress">Progress</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Shared -->
+    <string name="stars_description">%1$d of %2$d stars</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to CodeQuest</string>
+    <string name="onboarding_intro">Learn Kotlin in short lessons: read code, predict what it prints and put programs back in order.</string>
+    <string name="onboarding_promise_title">How CodeQuest treats you</string>
+    <string name="onboarding_promise_offline">• Every core lesson works offline.</string>
+    <string name="onboarding_promise_no_account">• No account. Your progress stays on this device and is not backed up to the cloud.</string>
+    <string name="onboarding_promise_no_ads">• No ads, no tracking and no location or photo-library access.</string>
+    <string name="onboarding_promise_no_pressure">• No streaks to lose and no reminders. Learn when it suits you.</string>
+    <string name="onboarding_question_title">Save a detailed answer history?</string>
+    <string name="onboarding_question_body">If you say yes, CodeQuest records each answer (question, topic, right or wrong) on this device so the Progress tab can show your accuracy by topic. Nothing is sent anywhere.</string>
+    <string name="onboarding_decline">No, don\'t save it</string>
+    <string name="onboarding_accept">Yes, save it</string>
+    <string name="onboarding_footnote">Either way you get every lesson. You can change this at any time in Settings, and switching it off deletes the saved history.</string>
+
+    <!-- Home -->
+    <string name="home_progress_title">Your path</string>
+    <string name="home_progress_summary">%1$d of %2$d lessons complete · %3$d XP</string>
+    <string name="home_start_lesson">Start: %1$s</string>
+    <string name="home_continue_lesson">Continue: %1$s</string>
+    <string name="home_bonus_title">Bonus round</string>
+    <string name="home_bonus_body">Fresh computing questions downloaded from Open Trivia DB. Needs an internet connection; the last round you downloaded can be replayed offline.</string>
+    <string name="home_bonus_button">Play bonus round</string>
+    <string name="home_unit_title">Unit %1$d · %2$s</string>
+    <string name="lesson_status_locked">Locked</string>
+    <string name="lesson_status_completed">Completed</string>
+    <string name="lesson_status_open">Not completed yet</string>
+    <string name="lesson_locked_hint">Finish the lesson before this one to open it, or unlock all lessons in Settings.</string>
+
+    <!-- Lesson -->
+    <string name="lesson_close">Close lesson</string>
+    <string name="lesson_progress_count">%1$d/%2$d</string>
+    <string name="lesson_progress_description">%1$d of %2$d questions done</string>
+    <string name="lesson_review_label">Let\'s try this one again</string>
+    <string name="lesson_bonus_label">Bonus round</string>
+    <string name="lesson_bonus_offline_label">Bonus round · offline copy of your last download</string>
+    <string name="lesson_option_correct">Correct answer</string>
+    <string name="lesson_option_wrong">Your answer, not correct</string>
+    <string name="lesson_order_program">Your program</string>
+    <string name="lesson_order_available">Available lines</string>
+    <string name="lesson_order_hint">Tap the lines below in the order they should run. Tap a placed line to take it out again.</string>
+    <string name="lesson_order_add">Add line to your program</string>
+    <string name="lesson_order_remove">Remove line from your program</string>
+    <string name="lesson_check">Check</string>
+    <string name="lesson_continue">Continue</string>
+    <string name="lesson_feedback_correct">Correct!</string>
+    <string name="lesson_feedback_wrong">Not quite</string>
+    <string name="lesson_feedback_answer_label">Answer</string>
+    <string name="lesson_feedback_retry_note">This question will come back at the end so you can try it again.</string>
+    <string name="lesson_failed_title">This lesson could not be opened</string>
+    <string name="lesson_failed_body">The lesson has no questions. Go back to the path and choose another one.</string>
+    <string name="lesson_bonus_failed_title">No bonus round available</string>
+    <string name="lesson_bonus_failed_body">The questions could not be downloaded and there is no saved round yet. Check your connection and try again. All core lessons still work offline.</string>
+    <string name="lesson_retry">Try again</string>
+    <string name="lesson_back_to_path">Back to path</string>
+    <string name="lesson_exit_title">Leave this lesson?</string>
+    <string name="lesson_exit_body">Your answers in this lesson so far will not be saved. Finished lessons are not affected.</string>
+    <string name="lesson_exit_stay">Keep going</string>
+    <string name="lesson_exit_leave">Leave</string>
+
+    <!-- Result -->
+    <string name="result_title_lesson">Lesson complete</string>
+    <string name="result_title_bonus">Bonus round complete</string>
+    <string name="result_first_try">You got %1$d of %2$d right first time.</string>
+    <string name="result_xp">+%1$d XP</string>
+    <string name="result_no_pressure">Your progress is saved on this device and never expires. Carry on now or come back whenever you like.</string>
+    <string name="result_done">Back to path</string>
+    <string name="result_again">Practise again</string>
+
+    <!-- Statistics -->
+    <string name="stats_title">Your progress</string>
+    <string name="stats_lessons_value">%1$d/%2$d</string>
+    <string name="stats_lessons_label">Lessons completed</string>
+    <string name="stats_xp_label">Total XP</string>
+    <string name="stats_percent_value">%1$d%%</string>
+    <string name="stats_first_try_label">Right first time</string>
+    <string name="stats_days_label">Days practised</string>
+    <string name="stats_tile_description">%1$s: %2$s</string>
+    <string name="stats_topics_title">Accuracy by topic</string>
+    <string name="stats_topics_off">Detailed answer history is off, so accuracy by topic is not recorded. You can turn it on in Settings. Lessons work the same either way.</string>
+    <string name="stats_topics_empty">Finish a lesson to see your accuracy by topic.</string>
+    <string name="stats_topic_value">%1$d%% (%2$d/%3$d)</string>
+    <string name="stats_topic_description">%1$s: %2$d of %3$d answers correct</string>
+    <string name="stats_recent_title">Recent sessions</string>
+    <string name="stats_recent_empty">No sessions yet. Your finished lessons will appear here.</string>
+    <string name="stats_recent_detail">%1$d of %2$d right first time · +%3$d XP</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_learning">Learning</string>
+    <string name="settings_sound_title">Sound effects</string>
+    <string name="settings_sound_body">Play a short tone when an answer is checked.</string>
+    <string name="settings_unlock_title">Unlock all lessons</string>
+    <string name="settings_unlock_body">Open any lesson in any order instead of following the path.</string>
+    <string name="settings_difficulty_title">Bonus round difficulty</string>
+    <string name="settings_difficulty_body">Sets how hard the downloaded bonus questions are.</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme_title">Theme</string>
+    <string name="settings_section_privacy">Privacy and your data</string>
+    <string name="settings_history_title">Detailed answer history</string>
+    <string name="settings_history_body">Record each answer on this device to show accuracy by topic. Switching this off deletes the saved history.</string>
+    <string name="settings_privacy_summary">CodeQuest stores your lesson results on this device only. It has no account, ads or analytics, and it is excluded from cloud backup. The only network request is the bonus-round download, which sends no information about you.</string>
+    <string name="settings_delete_button">Delete my progress</string>
+    <string name="settings_delete_dialog_title">Delete all progress?</string>
+    <string name="settings_delete_dialog_body">This removes your completed lessons, stars, XP and answer history from this device. It cannot be undone.</string>
+    <string name="settings_delete_confirm">Delete</string>
+    <string name="settings_delete_cancel">Cancel</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_body">CodeQuest 1.0, built for CP3406 Assessment 3. Bonus questions come from Open Trivia DB (opentdb.com), licensed CC BY-SA 4.0.</string>
+</resources>
