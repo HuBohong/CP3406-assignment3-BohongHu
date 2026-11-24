@@ -64,6 +64,15 @@ object CodeQuestIcons {
         }
     }
 
+    /** Boss fights: a target. */
+    val Target: ImageVector by lazy {
+        icon("Target") {
+            stroke("M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16z", width = 2.4f)
+            fill("M12 9a3 3 0 1 1 0 6a3 3 0 1 1 0-6z")
+            stroke("M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4", width = 2.4f)
+        }
+    }
+
     private class Builder(val builder: ImageVector.Builder) {
         fun fill(path: String) {
             builder.addPath(pathData = addPathNodes(path), fill = SolidColor(Color.Black))

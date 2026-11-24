@@ -3,6 +3,7 @@ package au.edu.jcu.codequest.ui
 import au.edu.jcu.codequest.domain.model.StatsOverview
 import au.edu.jcu.codequest.domain.model.UserSettings
 import au.edu.jcu.codequest.testutil.FakeCurriculumRepository
+import au.edu.jcu.codequest.testutil.FakeMissionRepository
 import au.edu.jcu.codequest.testutil.FakeProgressRepository
 import au.edu.jcu.codequest.testutil.FakeSettingsRepository
 import au.edu.jcu.codequest.testutil.MainDispatcherRule
@@ -36,6 +37,7 @@ class HomeViewModelTest {
     )
     private val settings = FakeSettingsRepository()
     private val progress = FakeProgressRepository()
+    private val missions = FakeMissionRepository()
 
     /** uiState only runs while it has a collector, so each test collects it in the background. */
     private fun TestScope.collectState(viewModel: HomeViewModel): () -> HomeUiState {
@@ -43,7 +45,7 @@ class HomeViewModelTest {
         return { viewModel.uiState.value }
     }
 
-    private fun createViewModel() = HomeViewModel(curriculum, settings, progress)
+    private fun createViewModel() = HomeViewModel(curriculum, settings, progress, missions)
 
     @Test
     fun lessons_areGroupedIntoUnitsInPathOrder() = runTest {
@@ -71,6 +73,49 @@ class HomeViewModelTest {
         settings.state.value = UserSettings(unlockAllLessons = true)
 
         assertTrue(state().units.flatMap { it.lessons }.none { it.isLocked })
+    }
+
+    @Test
+    fun unitMission_opensOnlyWhenEveryLessonInTheUnitIsDone() = runTest {
+        val state = collectState(createViewModel())
+
+        val unit1 = state().units[0].mission
+        assertEquals("mission-1", unit1?.id)
+        assertTrue("unit 1 still has lesson b to do", unit1?.isLocked == true)
+
+        curriculum.lessons.value = listOf(
+            testSummary("a", unitIndex = 1, timesCompleted = 1),
+            testSummary("b", unitIndex = 1, timesCompleted = 1),
+            testSummary("c", unitIndex = 2),
+        )
+
+        assertFalse(state().units[0].mission?.isLocked ?: true)
+        assertTrue(state().units[1].mission?.isLocked ?: false)
+    }
+
+    @Test
+    fun currentNode_isTheMissionOnceItsLessonsAreDone_thenMovesOn() = runTest {
+        curriculum.lessons.value = listOf(
+            testSummary("a", unitIndex = 1, timesCompleted = 1),
+            testSummary("b", unitIndex = 1, timesCompleted = 1),
+            testSummary("c", unitIndex = 2),
+        )
+        val state = collectState(createViewModel())
+        assertEquals("mission-1", state().currentNodeId)
+
+        missions.completed.value = setOf("mission-1")
+
+        assertEquals("c", state().currentNodeId)
+        assertTrue(state().units[0].mission?.isCompleted == true)
+    }
+
+    @Test
+    fun bossMission_isMarkedAsABossFight() = runTest {
+        curriculum.lessons.value = listOf(testSummary("x", unitIndex = 3))
+
+        val mission = collectState(createViewModel())().units.single().mission
+
+        assertTrue(mission?.isBoss == true)
     }
 
     @Test

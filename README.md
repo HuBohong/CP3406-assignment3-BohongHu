@@ -15,6 +15,8 @@ Built for **CP3406 Assessment 3: Education App** (James Cook University) by Boho
 | Two question types | **Choice** questions (concepts, "what does this print?", fill the blank) and **ordering** questions, where the learner taps scrambled lines of code into a working order. |
 | Mastery, not lives | A wrong answer is explained and the question returns at the end of the lesson. There are no hearts, timers or penalties; mistakes only affect the 1 to 3 star rating. |
 | Bonus round | Downloads fresh computing questions from the Open Trivia DB API. The last downloaded round is cached, so it can be replayed offline. |
+| Planet missions | Each unit ends with a mission instead of a test. Learners build a program from code blocks (`move()`, `repeat`, `if`/`else`, `while`) and watch Byte, the robot guide, run it on a grid planet, step by step, with the running block highlighted. |
+| Boss fight | Unit 3 ends with the laser drone: three lanes, eight attacks, and a dodging program that runs automatically every turn. A program that only ever moves up fails, which is how learners discover `else` and nested conditions. |
 | Statistics | Lessons completed, XP, first-try accuracy, days practised, accuracy by topic and recent sessions. |
 | Settings | Sound, bonus difficulty, theme, unlock-all-lessons, answer-history consent and "delete my progress". |
 
@@ -26,6 +28,7 @@ Built for **CP3406 Assessment 3: Education App** (James Cook University) by Boho
 | Landing page (Learn) | Progress summary, "Continue" shortcut, bonus round and the lesson path. | `ui/home` |
 | Activity (Lesson) | The quiz itself, with feedback after every answer. Also used for the bonus round. | `ui/lesson` |
 | Result | Stars, XP and first-try score for the finished lesson. | `ui/result` |
+| Mission | Block-programming challenge at the end of each unit, on a grid planet or in the boss arena. | `ui/mission` |
 | User statistics (Progress) | Headline numbers, accuracy by topic, recent sessions. | `ui/stats` |
 | Settings | Preferences and privacy controls. | `ui/settings` |
 
@@ -46,6 +49,10 @@ data/local (Room)   data/remote (Retrofit)   DataStore
 domain (pure Kotlin: models, QuizSession, Scoring, Progression) - used by every layer
 ```
 
+- **Mission engine** (`domain/mission/`) is also pure Kotlin. `Program` is an immutable tree
+  of blocks with editing operations; `Interpreter` runs it against a `MissionWorld`
+  (`GridWorld` or `BossWorld`) and records a frame for every action and condition check, which
+  the mission screen replays. A step limit stops endless `while` loops instead of freezing the app.
 - **Domain layer** (`domain/`) has no Android imports. `QuizSession` is an immutable state
   machine for a lesson, `Scoring` turns a result into stars and XP, and `Progression` decides
   which lessons are open. This is where most unit tests are aimed.
@@ -84,6 +91,7 @@ domain (pure Kotlin: models, QuizSession, Scoring, Progression) - used by every 
 | `sessions` | One row per finished lesson or bonus round. |
 | `attempts` | One row per answer. Written only if the learner opted in. |
 | `trivia_cache` | The last downloaded bonus round for each difficulty. |
+| `mission_progress` | Whether each mission is completed and how many runs it took. Added in database version 2 with a hand-written `Migration(1, 2)`, so updating the app keeps existing progress. |
 
 Queries worth a look: a `LEFT JOIN` that returns lessons with progress as a `Flow`,
 `GROUP BY` topic accuracy, a distinct-calendar-day count with `strftime`, and `@Transaction`
@@ -141,6 +149,10 @@ Local JVM tests (`app/src/test`), run with `./gradlew test`:
 | `QuizSessionTest`, `ScoringTest`, `ProgressionTest` | Quiz rules, stars and XP, lesson unlocking |
 | `TriviaQuestionsTest`, `SeedDataTest` | API text decoding and the integrity of all 40 built-in questions |
 | `TriviaRepositoryTest` | Network-first loading, cache fallback, JSON parsing |
+| `ProgramTest`, `MissionEngineTest` | Building and editing block programs; running them on grids and in the boss arena |
+| `MissionCatalogTest` | Every mission is solvable with its own toolbox, and common wrong programs fail |
+| `MissionViewModelTest` | Tap-to-build editing, replay, stepping and saving the result |
+| `KotlinTokenizerTest` | Syntax colouring of code snippets |
 | `LessonViewModelTest`, `HomeViewModelTest`, `SettingsViewModelTest` | ViewModel state and the consent logic, using fake repositories |
 
 Instrumented tests (`app/src/androidTest`), run with `./gradlew connectedAndroidTest` on an

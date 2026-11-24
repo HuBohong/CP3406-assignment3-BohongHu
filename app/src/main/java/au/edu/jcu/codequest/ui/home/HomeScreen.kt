@@ -97,7 +97,7 @@ private val CurrentNodeSize = 82.dp
 private val NodeDepth = 7.dp
 private val NodeStep = 116.dp
 private val PathTopPadding = 56.dp
-private val PathBottomPadding = 28.dp
+private val PathBottomPadding = 44.dp
 
 /** Sideways position of each lesson along the winding path, repeating every four lessons. */
 private val NodeOffsets = listOf(0.dp, (-72).dp, 0.dp, 72.dp)
@@ -107,11 +107,12 @@ private fun nodeOffset(lessonNumber: Int): Dp = NodeOffsets[(lessonNumber - 1).m
 @Composable
 fun HomeRoute(
     onOpenLesson: (String) -> Unit,
+    onOpenMission: (String) -> Unit,
     onOpenBonus: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    HomeScreen(uiState = uiState, onOpenLesson = onOpenLesson, onOpenBonus = onOpenBonus)
+    HomeScreen(uiState = uiState, onOpenLesson = onOpenLesson, onOpenMission = onOpenMission, onOpenBonus = onOpenBonus)
 }
 
 /**
@@ -122,11 +123,12 @@ fun HomeRoute(
 fun HomeScreen(
     uiState: HomeUiState,
     onOpenLesson: (String) -> Unit,
+    onOpenMission: (String) -> Unit,
     onOpenBonus: () -> Unit,
 ) {
     LightSystemBarIcons()
     var openLessonId by rememberSaveable { mutableStateOf<String?>(null) }
-    val currentLessonId = uiState.nextLesson?.takeUnless { it.isLocked }?.id
+    val currentLessonId = uiState.currentNodeId
 
     Box(Modifier.fillMaxSize()) {
         SpaceBackground(Modifier.matchParentSize())
@@ -156,6 +158,10 @@ fun HomeScreen(
                         onStartLesson = { id ->
                             openLessonId = null
                             onOpenLesson(id)
+                        },
+                        onStartMission = { id ->
+                            openLessonId = null
+                            onOpenMission(id)
                         },
                         modifier = Modifier.contentWidth().padding(top = 24.dp),
                     )
@@ -275,15 +281,20 @@ private fun UnitSection(
     onNodeClick: (String) -> Unit,
     onDismissPopover: () -> Unit,
     onStartLesson: (String) -> Unit,
+    onStartMission: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         UnitBanner(unit = unit, colors = colors)
 
         val lessons = unit.lessons
-        val areaHeight = PathTopPadding + NodeStep * (lessons.size - 1).coerceAtLeast(0) +
+        val mission = unit.mission
+        // Sideways offset of every stop: the lessons, then the mission that closes the unit.
+        val offsets = lessons.map { nodeOffset(it.number) } +
+            listOfNotNull(mission?.let { nodeOffset((lessons.lastOrNull()?.number ?: 0) + 1) })
+        val areaHeight = PathTopPadding + NodeStep * (offsets.size - 1).coerceAtLeast(0) +
             CurrentNodeSize + NodeDepth + PathBottomPadding
-        val planetOnLeft = lessons.none { nodeOffset(it.number) < 0.dp }
+        val planetOnLeft = offsets.none { it < 0.dp }
         val density = LocalDensity.current
         val trail = CodeQuestTheme.colors.space.trail
 
@@ -302,11 +313,11 @@ private fun UnitSection(
 
             // Dotted flight path through the centre of every node.
             Canvas(Modifier.matchParentSize()) {
-                if (lessons.size < 2) return@Canvas
-                val centres = lessons.mapIndexed { i, lesson ->
+                if (offsets.size < 2) return@Canvas
+                val centres = offsets.mapIndexed { i, offset ->
                     with(density) {
                         Offset(
-                            x = size.width / 2f + nodeOffset(lesson.number).toPx(),
+                            x = size.width / 2f + offset.toPx(),
                             y = (PathTopPadding + NodeStep * i + NodeSize / 2).toPx(),
                         )
                     }
@@ -343,6 +354,137 @@ private fun UnitSection(
                         .align(Alignment.TopCenter)
                         .offset(x = nodeOffset(lesson.number), y = PathTopPadding + NodeStep * i),
                 )
+            }
+            if (mission != null) {
+                MissionNode(
+                    mission = mission,
+                    isCurrent = mission.id == currentLessonId,
+                    isPopoverOpen = mission.id == openLessonId,
+                    onClick = { onNodeClick(mission.id) },
+                    onDismissPopover = onDismissPopover,
+                    onStart = { onStartMission(mission.id) },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(x = offsets.last(), y = PathTopPadding + NodeStep * lessons.size),
+                )
+            }
+        }
+    }
+}
+
+/** The stop that closes a unit: a mission (amber flag) or a boss fight (red target). */
+@Composable
+private fun MissionNode(
+    mission: MissionNodeUi,
+    isCurrent: Boolean,
+    isPopoverOpen: Boolean,
+    onClick: () -> Unit,
+    onDismissPopover: () -> Unit,
+    onStart: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val space = CodeQuestTheme.colors.space
+    val extra = CodeQuestTheme.colors
+    val status = stringResource(
+        when {
+            mission.isLocked -> R.string.lesson_status_locked
+            mission.isCompleted -> R.string.lesson_status_completed
+            else -> R.string.lesson_status_open
+        },
+    )
+    val kind = stringResource(if (mission.isBoss) R.string.home_boss_kind else R.string.home_mission_kind)
+    val description = stringResource(R.string.home_mission_node_description, kind, mission.title, status)
+    val colors = when {
+        mission.isLocked -> ChunkyColors(face = space.lockFill, edge = space.lockEdge, content = space.lockInk)
+        mission.isBoss -> extra.dangerButton
+        else -> extra.xpButton
+    }
+    Box(modifier = modifier, contentAlignment = Alignment.TopCenter) {
+        if (isCurrent) {
+            PulseRing(color = if (mission.isBoss) Color(0xFFFF8A8E) else Color(0xFFFFC94D), nodeSize = CurrentNodeSize)
+            StartBubble(color = colors.face, modifier = Modifier.offset(y = (-48).dp))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            ChunkySurface(
+                colors = colors,
+                shape = CircleShape,
+                depth = NodeDepth,
+                onClick = onClick,
+                onClickLabel = stringResource(R.string.home_node_click_label),
+                modifier = Modifier
+                    .width(CurrentNodeSize)
+                    .height(CurrentNodeSize + NodeDepth)
+                    .semantics { contentDescription = description }
+                    .testTag(HomeTestTags.node(mission.id)),
+            ) {
+                Icon(
+                    imageVector = when {
+                        mission.isLocked -> Icons.Filled.Lock
+                        mission.isCompleted -> Icons.Filled.Check
+                        mission.isBoss -> CodeQuestIcons.Target
+                        else -> CodeQuestIcons.Flag
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(38.dp),
+                )
+            }
+            Text(
+                text = mission.title,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (mission.isLocked) space.lockInk else Color.White,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clearAndSetSemantics {},
+            )
+        }
+        if (isPopoverOpen) {
+            val belowNode = with(LocalDensity.current) { (CurrentNodeSize + NodeDepth + 34.dp).roundToPx() }
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, belowNode),
+                onDismissRequest = onDismissPopover,
+                properties = PopupProperties(focusable = true),
+            ) {
+                MissionPopover(mission = mission, kind = kind, colors = colors, onStart = onStart)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MissionPopover(mission: MissionNodeUi, kind: String, colors: ChunkyColors, onStart: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shadowElevation = 8.dp,
+        modifier = Modifier.width(288.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(text = kind, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(text = mission.title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = if (mission.isLocked) stringResource(R.string.home_mission_locked) else mission.goal,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!mission.isLocked) {
+                Spacer(Modifier.height(4.dp))
+                ChunkyButton(
+                    onClick = onStart,
+                    colors = colors,
+                    height = 48.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(HomeTestTags.START),
+                ) {
+                    Text(
+                        stringResource(if (mission.isCompleted) R.string.home_mission_again else R.string.home_mission_start),
+                    )
+                }
             }
         }
     }

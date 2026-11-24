@@ -34,6 +34,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import au.edu.jcu.codequest.ui.home.HomeRoute
 import au.edu.jcu.codequest.ui.lesson.LessonRoute
+import au.edu.jcu.codequest.ui.mission.MissionRoute
 import au.edu.jcu.codequest.ui.onboarding.OnboardingRoute
 import au.edu.jcu.codequest.ui.result.ResultScreen
 import au.edu.jcu.codequest.ui.settings.SettingsRoute
@@ -139,8 +140,15 @@ private fun CodeQuestNavHost(
         composable(Routes.HOME) {
             HomeRoute(
                 onOpenLesson = { lessonId -> navController.navigate(Routes.lesson(lessonId)) },
+                onOpenMission = { missionId -> navController.navigate(Routes.mission(missionId)) },
                 onOpenBonus = { navController.navigate(Routes.lesson(Routes.BONUS_ID)) },
             )
+        }
+        composable(
+            route = Routes.MISSION,
+            arguments = listOf(navArgument(Routes.ARG_MISSION_ID) { type = NavType.StringType }),
+        ) {
+            MissionRoute(onExit = { navController.popBackStack() })
         }
         composable(Routes.STATS) { StatsRoute() }
         composable(Routes.SETTINGS) { SettingsRoute() }
