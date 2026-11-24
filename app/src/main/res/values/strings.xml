@@ -55,8 +55,9 @@
     <string name="home_mission_start">Start mission</string>
     <string name="home_mission_again">Play again</string>
     <string name="home_bonus_title">Bonus round</string>
-    <string name="home_bonus_body">Fresh computing questions from the web. Your last round also works offline.</string>
-    <string name="home_bonus_button">Play bonus round</string>
+    <string name="home_bonus_body">Fresh computing questions from the web</string>
+    <string name="home_bonus_button">Play</string>
+    <string name="home_bonus_button_description">Play bonus round</string>
     <string name="lesson_status_locked">Locked</string>
     <string name="lesson_status_completed">Completed</string>
     <string name="lesson_status_open">Not completed yet</string>

@@ -259,14 +259,18 @@ private fun BonusCard(onOpenBonus: () -> Unit, modifier: Modifier = Modifier) {
                 color = space.textSoft,
             )
         }
+        val playDescription = stringResource(R.string.home_bonus_button_description)
         ChunkyButton(
             onClick = onOpenBonus,
             colors = CodeQuestTheme.colors.xpButton,
             height = 42.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.testTag(HomeTestTags.BONUS),
+            contentPadding = PaddingValues(horizontal = 18.dp),
+            modifier = Modifier
+                .testTag(HomeTestTags.BONUS)
+                // The button only says "Play"; TalkBack hears what it plays.
+                .semantics { contentDescription = playDescription },
         ) {
-            Text(stringResource(R.string.home_bonus_button))
+            Text(stringResource(R.string.home_bonus_button), modifier = Modifier.clearAndSetSemantics {})
         }
     }
 }
