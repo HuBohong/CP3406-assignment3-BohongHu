@@ -276,6 +276,20 @@ class LessonViewModelTest {
     }
 
     @Test
+    fun practisingACompletedLessonAgain_letsTheLearnerSkipCards() {
+        cards = mapOf("lesson" to listOf(LearnCatalog.watchFuel, LearnCatalog.valBug))
+        curriculum.lessons.value = listOf(testSummary("lesson", timesCompleted = 1))
+        val viewModel = createViewModel()
+
+        assertTrue(viewModel.uiState.value.cardReady)
+        viewModel.nextCard()
+        assertTrue("the next card is skippable too", viewModel.uiState.value.cardReady)
+        viewModel.nextCard()
+        assertEquals("q1", viewModel.uiState.value.question?.id)
+        assertNull(viewModel.uiState.value.currentCard)
+    }
+
+    @Test
     fun questionsCannotBeCheckedWhileACardIsShowing() {
         cards = mapOf("lesson" to listOf(LearnCatalog.watchFuel))
         val viewModel = createViewModel()

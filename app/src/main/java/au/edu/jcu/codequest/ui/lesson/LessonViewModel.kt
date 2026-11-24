@@ -63,6 +63,8 @@ data class LessonUiState(
     val cardIndex: Int = 0,
     /** True once the learner has interacted with the current card enough to move on. */
     val cardReady: Boolean = false,
+    /** Cards of a lesson finished before can be skipped straight away when practising again. */
+    val cardsSkippable: Boolean = false,
 ) {
     /** The teaching card on screen, or null once the questions have started. */
     val currentCard: LearnCard? get() = cards.getOrNull(cardIndex)
@@ -118,7 +120,8 @@ class LessonViewModel @Inject constructor(
         viewModelScope.launch {
             val questions = if (isBonus) loadBonusQuestions() else loadLessonQuestions()
             val cards = if (isBonus) emptyList() else learnCardRepository.cardsFor(lessonId)
-            _uiState.update { it.copy(cards = cards, cardIndex = 0, cardReady = false) }
+            val skippable = !isBonus && cards.isNotEmpty() && isCompletedBefore()
+            _uiState.update { it.copy(cards = cards, cardIndex = 0, cardReady = skippable, cardsSkippable = skippable) }
             if (questions.isEmpty()) {
                 _uiState.update { it.copy(isLoading = false, loadFailed = true) }
             } else {
@@ -138,7 +141,7 @@ class LessonViewModel @Inject constructor(
     fun nextCard() {
         _uiState.update { state ->
             if (state.currentCard != null && state.cardReady) {
-                state.copy(cardIndex = state.cardIndex + 1, cardReady = false)
+                state.copy(cardIndex = state.cardIndex + 1, cardReady = state.cardsSkippable)
             } else {
                 state
             }
@@ -212,6 +215,9 @@ class LessonViewModel @Inject constructor(
         _uiState.update { it.copy(title = lessonTitle) }
         return curriculumRepository.getQuestions(lessonId)
     }
+
+    private suspend fun isCompletedBefore(): Boolean =
+        curriculumRepository.observeLessons().first().any { it.lesson.id == lessonId && it.isCompleted }
 
     private suspend fun loadBonusQuestions(): List<Question> {
         lessonTitle = TriviaQuestions.TITLE

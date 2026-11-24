@@ -70,6 +70,7 @@ import au.edu.jcu.codequest.ui.components.CodeTextStyle
 import au.edu.jcu.codequest.ui.components.highlightKotlin
 import au.edu.jcu.codequest.ui.theme.ChunkyColors
 import au.edu.jcu.codequest.ui.theme.CodeQuestTheme
+import kotlin.math.roundToInt
 
 /**
  * Shows one teaching card. [onReady] is called once the learner has done what the card asks
@@ -245,12 +246,16 @@ private fun TemplateEditor(
                                 Text(highlightKotlin(before, colors), style = CodeTextStyle, color = colors.text, softWrap = false)
                             }
                             val slot = match.groupValues[1].toInt()
+                            val value = card.slots[slot].options[indices[slot]]
+                            // Spaces around a value such as " until " belong to the code, not the chip.
+                            if (value.startsWith(" ")) Text(" ", style = CodeTextStyle)
                             SlotChip(
-                                value = card.slots[slot].options[indices[slot]],
+                                value = value.trim(),
                                 name = card.slots[slot].name,
                                 enabled = enabled,
                                 onClick = { onCycleSlot(slot) },
                             )
+                            if (value.endsWith(" ")) Text(" ", style = CodeTextStyle)
                             cursor = match.range.last + 1
                         }
                         val rest = line.substring(cursor)
@@ -454,7 +459,7 @@ private fun StepThroughCard(card: StepThrough, onReady: () -> Unit) {
     if (last > 0) {
         Slider(
             value = index.toFloat(),
-            onValueChange = { index = it.toInt().coerceIn(0, last) },
+            onValueChange = { index = it.roundToInt().coerceIn(0, last) },
             valueRange = 0f..last.toFloat(),
             steps = (last - 1).coerceAtLeast(0),
         )
