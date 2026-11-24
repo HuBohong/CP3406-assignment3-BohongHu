@@ -21,8 +21,10 @@ object Routes {
     const val ARG_XP = "xp"
     const val ARG_FIRST_TRY = "firstTry"
     const val ARG_TOTAL = "total"
+    const val ARG_MISSION_ID = "missionId"
 
     const val LESSON = "lesson/{$ARG_LESSON_ID}"
+    const val MISSION = "mission/{$ARG_MISSION_ID}"
     const val RESULT = "result/{$ARG_LESSON_ID}/{$ARG_STARS}/{$ARG_XP}/{$ARG_FIRST_TRY}/{$ARG_TOTAL}"
 
     /** Lets other apps or adb open a lesson directly, e.g. codequest://lesson/basics-1 */
@@ -32,6 +34,8 @@ object Routes {
     const val BONUS_ID = TriviaQuestions.LESSON_ID
 
     fun lesson(lessonId: String) = "lesson/$lessonId"
+
+    fun mission(missionId: String) = "mission/$missionId"
 
     fun result(result: SessionResult) =
         "result/${result.lessonId}/${result.stars}/${result.xp}/${result.firstTryCorrect}/${result.total}"
