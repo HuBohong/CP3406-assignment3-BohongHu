@@ -96,10 +96,14 @@ interface ProgressDao {
     @Query("DELETE FROM lesson_progress")
     suspend fun clearLessonProgress()
 
+    @Query("DELETE FROM mission_progress")
+    suspend fun clearMissionProgress()
+
     @Transaction
     suspend fun clearAll() {
         clearAttempts()
         clearSessions()
         clearLessonProgress()
+        clearMissionProgress()
     }
 }

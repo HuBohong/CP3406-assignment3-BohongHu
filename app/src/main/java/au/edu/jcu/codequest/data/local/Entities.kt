@@ -88,6 +88,18 @@ data class TriviaEntity(
     val fetchedAt: Long,
 )
 
+/**
+ * One end-of-unit mission. Added in database version 2 (see [AppDatabase.MIGRATION_1_2]).
+ * Only the outcome is stored, never the program the learner wrote.
+ */
+@Entity(tableName = "mission_progress")
+data class MissionProgressEntity(
+    @PrimaryKey val missionId: String,
+    val completed: Boolean,
+    val attempts: Int,
+    val completedAt: Long?,
+)
+
 /** Query result: a lesson joined with the learner's progress (zeros when not started). */
 data class LessonWithProgress(
     @Embedded val lesson: LessonEntity,

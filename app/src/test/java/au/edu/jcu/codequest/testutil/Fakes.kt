@@ -2,6 +2,7 @@ package au.edu.jcu.codequest.testutil
 
 import au.edu.jcu.codequest.data.repository.BonusRound
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
+import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
 import au.edu.jcu.codequest.data.repository.TriviaRepository
@@ -146,5 +147,17 @@ class FakeSoundPlayer : SoundPlayer {
 
     override fun play(correct: Boolean) {
         played += correct
+    }
+}
+
+class FakeMissionRepository(completed: Set<String> = emptySet()) : MissionRepository {
+    val completed = MutableStateFlow(completed)
+    val attempts = mutableListOf<Pair<String, Boolean>>()
+
+    override fun observeCompletedMissionIds(): Flow<Set<String>> = completed
+
+    override suspend fun recordAttempt(missionId: String, success: Boolean) {
+        attempts += missionId to success
+        if (success) completed.update { it + missionId }
     }
 }

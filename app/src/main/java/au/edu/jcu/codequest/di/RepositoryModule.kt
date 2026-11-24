@@ -2,12 +2,16 @@ package au.edu.jcu.codequest.di
 
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
 import au.edu.jcu.codequest.data.repository.DataStoreSettingsRepository
+import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.NetworkTriviaRepository
+import au.edu.jcu.codequest.data.repository.OfflineMissionRepository
 import au.edu.jcu.codequest.data.repository.OfflineCurriculumRepository
 import au.edu.jcu.codequest.data.repository.OfflineProgressRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
 import au.edu.jcu.codequest.data.repository.TriviaRepository
+import au.edu.jcu.codequest.util.DelayFrameTimer
+import au.edu.jcu.codequest.util.FrameTimer
 import au.edu.jcu.codequest.util.SoundPlayer
 import au.edu.jcu.codequest.util.ToneSoundPlayer
 import dagger.Binds
@@ -35,8 +39,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindMissionRepository(impl: OfflineMissionRepository): MissionRepository
+
+    @Binds
+    @Singleton
     abstract fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
 
     @Binds
     abstract fun bindSoundPlayer(impl: ToneSoundPlayer): SoundPlayer
+
+    @Binds
+    abstract fun bindFrameTimer(impl: DelayFrameTimer): FrameTimer
 }

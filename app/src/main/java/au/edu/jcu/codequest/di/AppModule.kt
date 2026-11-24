@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import au.edu.jcu.codequest.data.local.AppDatabase
 import au.edu.jcu.codequest.data.local.CurriculumDao
+import au.edu.jcu.codequest.data.local.MissionDao
 import au.edu.jcu.codequest.data.local.ProgressDao
 import au.edu.jcu.codequest.data.local.TriviaDao
 import au.edu.jcu.codequest.data.remote.TriviaApi
@@ -44,7 +45,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME).build()
+        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideCurriculumDao(database: AppDatabase): CurriculumDao = database.curriculumDao()
@@ -54,6 +57,9 @@ object AppModule {
 
     @Provides
     fun provideTriviaDao(database: AppDatabase): TriviaDao = database.triviaDao()
+
+    @Provides
+    fun provideMissionDao(database: AppDatabase): MissionDao = database.missionDao()
 
     @Provides
     @Singleton

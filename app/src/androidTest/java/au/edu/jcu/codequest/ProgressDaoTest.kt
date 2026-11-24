@@ -138,11 +138,29 @@ class ProgressDaoTest {
         val dao = database.progressDao()
         val attempts = listOf(AttemptEntity(questionId = "q1", topic = "Loops", correct = true, answeredAt = 1L))
         dao.recordSession(session("flow-2", stars = 2), attempts, countsTowardsLesson = true)
+        database.missionDao().recordAttempt("mission-1", success = true, now = 5L)
 
         dao.clearAll()
 
         assertNull(dao.getProgress("flow-2"))
         assertEquals(0, dao.observeSessionCount().first())
         assertTrue(dao.observeTopicAccuracy().first().isEmpty())
+        assertTrue(database.missionDao().observeCompletedIds().first().isEmpty())
+    }
+
+    @Test
+    fun mission_staysCompletedAfterALaterFailedReplay() = runTest {
+        val missions = database.missionDao()
+
+        missions.recordAttempt("mission-2", success = false, now = 1L)
+        assertTrue(missions.observeCompletedIds().first().isEmpty())
+
+        missions.recordAttempt("mission-2", success = true, now = 2L)
+        missions.recordAttempt("mission-2", success = false, now = 3L)
+
+        val progress = missions.get("mission-2")
+        assertEquals(listOf("mission-2"), missions.observeCompletedIds().first())
+        assertEquals(3, progress?.attempts)
+        assertEquals(2L, progress?.completedAt)
     }
 }
