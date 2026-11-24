@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,7 +64,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -73,6 +73,7 @@ import au.edu.jcu.codequest.R
 import au.edu.jcu.codequest.ui.components.ByteMascot
 import au.edu.jcu.codequest.ui.components.ChunkyButton
 import au.edu.jcu.codequest.ui.components.ChunkySurface
+import au.edu.jcu.codequest.ui.components.ClampedPopupPositionProvider
 import au.edu.jcu.codequest.ui.components.CodeQuestIcons
 import au.edu.jcu.codequest.ui.components.LightSystemBarIcons
 import au.edu.jcu.codequest.ui.components.LoadingBox
@@ -442,10 +443,8 @@ private fun MissionNode(
             )
         }
         if (isPopoverOpen) {
-            val belowNode = with(LocalDensity.current) { (CurrentNodeSize + NodeDepth + 34.dp).roundToPx() }
             Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, belowNode),
+                popupPositionProvider = rememberPopoverPosition(),
                 onDismissRequest = onDismissPopover,
                 properties = PopupProperties(focusable = true),
             ) {
@@ -606,15 +605,28 @@ private fun LessonNode(
         }
 
         if (isPopoverOpen) {
-            val belowNode = with(LocalDensity.current) { (size + NodeDepth + 30.dp).roundToPx() }
             Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, belowNode),
+                popupPositionProvider = rememberPopoverPosition(),
                 onDismissRequest = onDismissPopover,
                 properties = PopupProperties(focusable = true),
             ) {
                 LessonPopover(lesson = lesson, colors = colors, onStart = onStart)
             }
+        }
+    }
+}
+
+/** Popover placement for map stops: under the stop, kept on screen and clear of the bottom bar. */
+@Composable
+private fun rememberPopoverPosition(): ClampedPopupPositionProvider {
+    val density = LocalDensity.current
+    return remember(density) {
+        with(density) {
+            ClampedPopupPositionProvider(
+                gap = 8.dp.roundToPx(),
+                edgeMargin = 16.dp.roundToPx(),
+                bottomReserve = 112.dp.roundToPx(),
+            )
         }
     }
 }
