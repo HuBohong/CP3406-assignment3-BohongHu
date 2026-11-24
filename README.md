@@ -161,3 +161,11 @@ emulator or device:
 
 Bonus-round questions come from [Open Trivia DB](https://opentdb.com), licensed
 CC BY-SA 4.0. The Kotlin course content was written for this project.
+
+Fonts bundled in `app/src/main/res/font`:
+
+- [Poppins](https://github.com/itfoundry/Poppins), SIL Open Font License 1.1.
+- [DejaVu Sans Mono](https://dejavu-fonts.github.io), Bitstream Vera licence with DejaVu changes in the public domain.
+
+Byte the robot, the planets and the star field are drawn in code (`ui/components/Space.kt`);
+the app ships no image assets.

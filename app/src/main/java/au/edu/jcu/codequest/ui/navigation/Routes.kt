@@ -2,13 +2,12 @@ package au.edu.jcu.codequest.ui.navigation
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 import au.edu.jcu.codequest.R
 import au.edu.jcu.codequest.domain.model.SessionResult
 import au.edu.jcu.codequest.domain.quiz.TriviaQuestions
+import au.edu.jcu.codequest.ui.components.CodeQuestIcons
 
 /** Every navigation route in the app, with helpers that build routes containing arguments. */
 object Routes {
@@ -44,7 +43,7 @@ enum class TopLevelDestination(
     @StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
-    HOME(Routes.HOME, R.string.nav_learn, Icons.Filled.Home),
-    STATS(Routes.STATS, R.string.nav_progress, Icons.Filled.Star),
+    HOME(Routes.HOME, R.string.nav_learn, CodeQuestIcons.Path),
+    STATS(Routes.STATS, R.string.nav_progress, CodeQuestIcons.Chart),
     SETTINGS(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 }

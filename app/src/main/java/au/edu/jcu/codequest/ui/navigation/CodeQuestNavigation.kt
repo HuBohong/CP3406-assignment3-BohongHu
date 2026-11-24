@@ -7,15 +7,19 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
@@ -34,6 +38,7 @@ import au.edu.jcu.codequest.ui.onboarding.OnboardingRoute
 import au.edu.jcu.codequest.ui.result.ResultScreen
 import au.edu.jcu.codequest.ui.settings.SettingsRoute
 import au.edu.jcu.codequest.ui.stats.StatsRoute
+import au.edu.jcu.codequest.ui.theme.CodeQuestTheme
 
 /** Width from which a side navigation rail replaces the bottom bar (tablets, landscape). */
 private val RAIL_MIN_WIDTH = 600.dp
@@ -48,18 +53,28 @@ fun CodeQuestNavigation(startDestination: String) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val showTopLevelNavigation = TopLevelDestination.entries.any { currentDestination.isOn(it) }
+    // The Learn map sits on a dark space background, so the bar or rail turns dark with it.
+    val onSpace = currentDestination.isOn(TopLevelDestination.HOME)
+    val barColors = topLevelBarColors(onSpace)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (maxWidth >= RAIL_MIN_WIDTH) {
             Row(Modifier.fillMaxSize()) {
                 if (showTopLevelNavigation) {
-                    NavigationRail {
+                    NavigationRail(containerColor = barColors.container) {
                         TopLevelDestination.entries.forEach { destination ->
                             NavigationRailItem(
                                 selected = currentDestination.isOn(destination),
                                 onClick = { navController.navigateToTopLevel(destination) },
                                 icon = { Icon(destination.icon, contentDescription = null) },
                                 label = { Text(stringResource(destination.labelRes)) },
+                                colors = NavigationRailItemDefaults.colors(
+                                    selectedIconColor = barColors.selectedContent,
+                                    selectedTextColor = barColors.selectedText,
+                                    indicatorColor = barColors.indicator,
+                                    unselectedIconColor = barColors.unselected,
+                                    unselectedTextColor = barColors.unselected,
+                                ),
                             )
                         }
                     }
@@ -72,13 +87,20 @@ fun CodeQuestNavigation(startDestination: String) {
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 bottomBar = {
                     if (showTopLevelNavigation) {
-                        NavigationBar {
+                        NavigationBar(containerColor = barColors.container) {
                             TopLevelDestination.entries.forEach { destination ->
                                 NavigationBarItem(
                                     selected = currentDestination.isOn(destination),
                                     onClick = { navController.navigateToTopLevel(destination) },
                                     icon = { Icon(destination.icon, contentDescription = null) },
                                     label = { Text(stringResource(destination.labelRes)) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = barColors.selectedContent,
+                                        selectedTextColor = barColors.selectedText,
+                                        indicatorColor = barColors.indicator,
+                                        unselectedIconColor = barColors.unselected,
+                                        unselectedTextColor = barColors.unselected,
+                                    ),
                                 )
                             }
                         }
@@ -176,6 +198,37 @@ private fun CodeQuestNavHost(
                 },
             )
         }
+    }
+}
+
+/** Colours for the bar or rail, dark over the space map and light everywhere else. */
+private data class TopLevelBarColors(
+    val container: Color,
+    val indicator: Color,
+    val selectedContent: Color,
+    val selectedText: Color,
+    val unselected: Color,
+)
+
+@Composable
+private fun topLevelBarColors(onSpace: Boolean): TopLevelBarColors {
+    val scheme = MaterialTheme.colorScheme
+    return if (onSpace) {
+        TopLevelBarColors(
+            container = CodeQuestTheme.colors.space.navBar,
+            indicator = CodeQuestTheme.colors.primaryButton.face,
+            selectedContent = Color.White,
+            selectedText = Color.White,
+            unselected = Color(0xFFB4ADDC),
+        )
+    } else {
+        TopLevelBarColors(
+            container = scheme.surfaceContainerLowest,
+            indicator = scheme.primaryContainer,
+            selectedContent = scheme.onPrimaryContainer,
+            selectedText = scheme.primary,
+            unselected = scheme.onSurfaceVariant,
+        )
     }
 }
 

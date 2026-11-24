@@ -36,11 +36,6 @@
     <string name="onboarding_footnote">Either way you get every lesson. You can change this at any time in Settings, and switching it off deletes the saved history.</string>
 
     <!-- Home -->
-    <string name="home_progress_title">Your path</string>
-    <string name="home_progress_summary">%1$d of %2$d lessons complete · %3$d XP</string>
-    <string name="home_start_lesson">Start: %1$s</string>
-    <string name="home_continue_lesson">Continue: %1$s</string>
-    <string name="home_unit_title">Unit %1$d · %2$s</string>
     <string name="home_lessons_chip">%1$d/%2$d</string>
     <string name="home_lessons_chip_description">%1$d of %2$d lessons complete</string>
     <string name="home_xp_chip_description">%1$d XP</string>
