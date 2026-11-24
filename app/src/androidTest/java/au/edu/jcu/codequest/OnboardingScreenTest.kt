@@ -23,12 +23,27 @@ class OnboardingScreenTest {
 
     private val choices = mutableListOf<Boolean>()
 
+    /** Shows the screen and moves past the story step to the consent question. */
     private fun showScreen() {
         composeRule.setContent {
             CodeQuestTheme(darkTheme = false) {
                 OnboardingScreen(onChoice = { choices += it })
             }
         }
+        composeRule.onNodeWithTag(OnboardingTestTags.NEXT).performScrollTo().performClick()
+    }
+
+    @Test
+    fun storyStep_comesFirstAndRecordsNoChoice() {
+        composeRule.setContent {
+            CodeQuestTheme(darkTheme = false) {
+                OnboardingScreen(onChoice = { choices += it })
+            }
+        }
+
+        composeRule.onNodeWithTag(OnboardingTestTags.NEXT).assertHasClickAction()
+        composeRule.onNodeWithTag(OnboardingTestTags.ACCEPT).assertDoesNotExist()
+        assertEquals(emptyList<Boolean>(), choices)
     }
 
     @Test

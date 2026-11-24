@@ -15,14 +15,20 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
 
+    <!-- Story -->
+    <string name="story_title">Byte needs your help</string>
+    <string name="story_body">Byte\'s ship has crash-landed at the edge of the Kotlin galaxy. Every system on board runs on code, and every lesson you finish repairs one of them.</string>
+    <string name="story_goal">Fix the ship, fly from planet to planet, and then use what you have learned to build worlds of your own.</string>
+    <string name="story_next">Help Byte</string>
+
     <!-- Onboarding -->
-    <string name="onboarding_title">Welcome to CodeQuest</string>
+    <string name="onboarding_title">Before we launch</string>
     <string name="onboarding_intro">Learn Kotlin in short lessons: read code, predict what it prints and put programs back in order.</string>
     <string name="onboarding_promise_title">How CodeQuest treats you</string>
-    <string name="onboarding_promise_offline">• Every core lesson works offline.</string>
-    <string name="onboarding_promise_no_account">• No account. Your progress stays on this device and is not backed up to the cloud.</string>
-    <string name="onboarding_promise_no_ads">• No ads, no tracking and no location or photo-library access.</string>
-    <string name="onboarding_promise_no_pressure">• No streaks to lose and no reminders. Learn when it suits you.</string>
+    <string name="onboarding_promise_offline">Every core lesson works offline.</string>
+    <string name="onboarding_promise_no_account">No account. Your progress stays on this device and is not backed up to the cloud.</string>
+    <string name="onboarding_promise_no_ads">No ads, no tracking and no location or photo-library access.</string>
+    <string name="onboarding_promise_no_pressure">No streaks to lose and no reminders. Learn when it suits you.</string>
     <string name="onboarding_question_title">Save a detailed answer history?</string>
     <string name="onboarding_question_body">If you say yes, CodeQuest records each answer (question, topic, right or wrong) on this device so the Progress tab can show your accuracy by topic. Nothing is sent anywhere.</string>
     <string name="onboarding_decline">No, don\'t save it</string>
@@ -34,10 +40,22 @@
     <string name="home_progress_summary">%1$d of %2$d lessons complete · %3$d XP</string>
     <string name="home_start_lesson">Start: %1$s</string>
     <string name="home_continue_lesson">Continue: %1$s</string>
-    <string name="home_bonus_title">Bonus round</string>
-    <string name="home_bonus_body">Fresh computing questions downloaded from Open Trivia DB. Needs an internet connection; the last round you downloaded can be replayed offline.</string>
-    <string name="home_bonus_button">Play bonus round</string>
     <string name="home_unit_title">Unit %1$d · %2$s</string>
+    <string name="home_lessons_chip">%1$d/%2$d</string>
+    <string name="home_lessons_chip_description">%1$d of %2$d lessons complete</string>
+    <string name="home_xp_chip_description">%1$d XP</string>
+    <string name="home_unit_label">Unit %1$d</string>
+    <string name="home_unit_count">%1$d/%2$d</string>
+    <string name="home_unit_count_description">%1$d of %2$d lessons done in this unit</string>
+    <string name="home_node_description">Lesson %1$d, %2$s, %3$s</string>
+    <string name="home_node_click_label">Show lesson details</string>
+    <string name="home_start_bubble">Start</string>
+    <string name="home_popover_lesson">Lesson %1$d</string>
+    <string name="home_popover_start">Start lesson</string>
+    <string name="home_popover_again">Practise again</string>
+    <string name="home_bonus_title">Bonus round</string>
+    <string name="home_bonus_body">Fresh computing questions from the web. Your last round also works offline.</string>
+    <string name="home_bonus_button">Play bonus round</string>
     <string name="lesson_status_locked">Locked</string>
     <string name="lesson_status_completed">Completed</string>
     <string name="lesson_status_open">Not completed yet</string>
@@ -77,8 +95,10 @@
     <!-- Result -->
     <string name="result_title_lesson">Lesson complete</string>
     <string name="result_title_bonus">Bonus round complete</string>
-    <string name="result_first_try">You got %1$d of %2$d right first time.</string>
-    <string name="result_xp">+%1$d XP</string>
+    <string name="result_xp">+%1$d</string>
+    <string name="result_xp_label">XP earned</string>
+    <string name="result_first_try_label">Right first time</string>
+    <string name="result_first_try_value">%1$d of %2$d</string>
     <string name="result_no_pressure">Your progress is saved on this device and never expires. Carry on now or come back whenever you like.</string>
     <string name="result_done">Back to path</string>
     <string name="result_again">Practise again</string>
