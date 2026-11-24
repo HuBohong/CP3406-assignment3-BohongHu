@@ -66,7 +66,7 @@
     <!-- Lesson -->
     <string name="lesson_close">Close lesson</string>
     <string name="lesson_progress_count">%1$d/%2$d</string>
-    <string name="lesson_progress_description">%1$d of %2$d questions done</string>
+    <string name="lesson_progress_description">%1$d of %2$d steps done</string>
     <string name="lesson_review_label">Let\'s try this one again</string>
     <string name="lesson_bonus_label">Bonus round</string>
     <string name="lesson_bonus_offline_label">Bonus round · offline copy of your last download</string>
@@ -198,4 +198,44 @@
     <string name="heading_right">right</string>
     <string name="heading_down">down</string>
     <string name="heading_left">left</string>
+    <!-- Teaching cards -->
+    <string name="learn_try_it">Try it</string>
+    <string name="learn_watch_it">Watch it</string>
+    <string name="learn_fix_bug">Fix the bug</string>
+    <string name="learn_predict_title">Predict first</string>
+    <string name="learn_predict_correct">You were right! Now change the values and see what else happens.</string>
+    <string name="learn_predict_wrong">Not quite. Look at the output below to see what really happens.</string>
+    <string name="learn_change_value">Change a value to continue.</string>
+    <string name="learn_goal_label">Challenge</string>
+    <string name="learn_goal_done">Challenge complete!</string>
+    <string name="learn_output">Output</string>
+    <string name="learn_nothing_printed">(nothing printed)</string>
+    <string name="learn_slot_cycle">Change %1$s</string>
+    <string name="learn_decrease">Decrease %1$s</string>
+    <string name="learn_increase">Increase %1$s</string>
+    <string name="learn_variables">Variables</string>
+    <string name="learn_step_of">Step %1$d of %2$d</string>
+    <string name="learn_back">Back</string>
+    <string name="learn_run_line">Run line %1$d</string>
+    <string name="learn_restart">Start again</string>
+    <string name="learn_watch_hint">Run every line to continue.</string>
+    <string name="learn_fix_hint">Tap the line with the bug.</string>
+    <string name="learn_fix_tap_label">Choose line %1$d</string>
+    <string name="learn_fixed">Fixed!</string>
+    <string name="learn_type_error">Error</string>
+    <string name="scene_fuel">Fuel tank: %1$d of %2$d</string>
+    <string name="scene_fuel_label">fuel = %1$d / %2$d</string>
+    <string name="scene_overflow">Overflow!</string>
+    <string name="scene_full">Tank full. Engines ready!</string>
+    <string name="scene_engines">Engines warming up</string>
+    <string name="scene_radio">Radio message: %1$s</string>
+    <string name="scene_radio_silent">The radio is silent</string>
+    <string name="scene_shields_up">Shields up, %1$d asteroids</string>
+    <string name="scene_cruising">Cruising, %1$d asteroids</string>
+    <string name="scene_shields_label">Shields up</string>
+    <string name="scene_cruising_label">Cruising</string>
+    <string name="scene_planet">%1$s is %2$s</string>
+    <string name="scene_launch">%1$d rockets launched: %2$s</string>
+    <string name="scene_launch_none">No rockets launched</string>
+    <string name="scene_countdown">Countdown: %1$s</string>
 </resources>

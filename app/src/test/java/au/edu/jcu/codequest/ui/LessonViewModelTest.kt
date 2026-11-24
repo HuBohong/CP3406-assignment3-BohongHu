@@ -1,6 +1,9 @@
 package au.edu.jcu.codequest.ui
 
 import androidx.lifecycle.SavedStateHandle
+import au.edu.jcu.codequest.data.repository.LearnCardRepository
+import au.edu.jcu.codequest.domain.learn.LearnCard
+import au.edu.jcu.codequest.domain.learn.LearnCatalog
 import au.edu.jcu.codequest.data.repository.BonusRound
 import au.edu.jcu.codequest.domain.model.Difficulty
 import au.edu.jcu.codequest.domain.model.UserSettings
@@ -41,6 +44,8 @@ class LessonViewModelTest {
     private val progress = FakeProgressRepository()
     private val settings = FakeSettingsRepository(UserSettings(onboardingDone = true))
     private val sound = FakeSoundPlayer()
+    private var cards: Map<String, List<LearnCard>> = emptyMap()
+    private val learnCards = LearnCardRepository { lessonId -> cards[lessonId].orEmpty() }
 
     private fun createViewModel(lessonId: String = "lesson") = LessonViewModel(
         savedStateHandle = SavedStateHandle(mapOf(Routes.ARG_LESSON_ID to lessonId)),
@@ -49,6 +54,7 @@ class LessonViewModelTest {
         progressRepository = progress,
         settingsRepository = settings,
         soundPlayer = sound,
+        learnCardRepository = learnCards,
     )
 
     private fun LessonViewModel.answerCurrent(correctly: Boolean) {
@@ -244,6 +250,51 @@ class LessonViewModelTest {
 
         assertTrue(state.loadFailed)
         assertNull(state.question)
+    }
+
+    @Test
+    fun teachingCardsComeFirst_andEachMustBeReadyBeforeMovingOn() {
+        cards = mapOf("lesson" to listOf(LearnCatalog.watchFuel, LearnCatalog.valBug))
+        val viewModel = createViewModel()
+
+        assertEquals(LearnCatalog.watchFuel, viewModel.uiState.value.currentCard)
+        assertEquals(4, viewModel.uiState.value.stepsTotal)
+
+        viewModel.nextCard()
+        assertEquals("not ready yet", 0, viewModel.uiState.value.cardIndex)
+
+        viewModel.markCardReady()
+        viewModel.nextCard()
+        assertEquals(LearnCatalog.valBug, viewModel.uiState.value.currentCard)
+        assertFalse(viewModel.uiState.value.cardReady)
+        assertEquals(0.25f, viewModel.uiState.value.progress, 0.001f)
+
+        viewModel.markCardReady()
+        viewModel.nextCard()
+        assertNull(viewModel.uiState.value.currentCard)
+        assertEquals("q1", viewModel.uiState.value.question?.id)
+    }
+
+    @Test
+    fun questionsCannotBeCheckedWhileACardIsShowing() {
+        cards = mapOf("lesson" to listOf(LearnCatalog.watchFuel))
+        val viewModel = createViewModel()
+
+        viewModel.selectChoice(1)
+        viewModel.check()
+
+        assertNull(viewModel.uiState.value.feedback)
+    }
+
+    @Test
+    fun bonusRound_neverShowsTeachingCards() {
+        cards = mapOf(Routes.BONUS_ID to listOf(LearnCatalog.watchFuel))
+        trivia.round = BonusRound.Ready(listOf(testChoiceQuestion("bonus-1")), fromCache = false)
+
+        val state = createViewModel(Routes.BONUS_ID).uiState.value
+
+        assertNull(state.currentCard)
+        assertEquals("bonus-1", state.question?.id)
     }
 
     @Test

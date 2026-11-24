@@ -70,6 +70,7 @@ import au.edu.jcu.codequest.ui.theme.ChunkyColors
 import au.edu.jcu.codequest.ui.theme.CodeQuestTheme
 
 object LessonTestTags {
+    const val CARD_CONTINUE = "lesson_card_continue"
     const val CHECK = "lesson_check"
     const val CONTINUE = "lesson_continue"
     const val FEEDBACK = "lesson_feedback"
@@ -106,6 +107,8 @@ fun LessonRoute(
         onContinue = viewModel::next,
         onRetryLoad = viewModel::load,
         onClose = { if (lessonInProgress) showExitDialog = true else onExit() },
+        onCardReady = viewModel::markCardReady,
+        onNextCard = viewModel::nextCard,
     )
 
     if (showExitDialog) {
@@ -130,14 +133,19 @@ fun LessonScreen(
     onContinue: () -> Unit,
     onRetryLoad: () -> Unit,
     onClose: () -> Unit,
+    onCardReady: () -> Unit = {},
+    onNextCard: () -> Unit = {},
 ) {
     val question = uiState.question
+    val card = uiState.currentCard
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { LessonTopBar(uiState = uiState, onClose = onClose) },
         bottomBar = {
-            if (question != null && !uiState.isLoading) {
-                LessonBottomBar(uiState = uiState, onCheck = onCheck, onContinue = onContinue)
+            when {
+                uiState.isLoading || question == null -> Unit
+                card != null -> CardBottomBar(ready = uiState.cardReady, onNext = onNextCard)
+                else -> LessonBottomBar(uiState = uiState, onCheck = onCheck, onContinue = onContinue)
             }
         },
     ) { innerPadding ->
@@ -147,6 +155,11 @@ fun LessonScreen(
                 isBonus = uiState.isBonus,
                 onRetry = onRetryLoad,
                 onClose = onClose,
+                modifier = Modifier.padding(innerPadding),
+            )
+            card != null -> CardContent(
+                uiState = uiState,
+                onCardReady = onCardReady,
                 modifier = Modifier.padding(innerPadding),
             )
             question != null -> QuestionContent(
@@ -161,9 +174,59 @@ fun LessonScreen(
     }
 }
 
+/** A teaching card, scrolled as one page. The key resets scroll position for each new card. */
+@Composable
+private fun CardContent(uiState: LessonUiState, onCardReady: () -> Unit, modifier: Modifier = Modifier) {
+    val card = uiState.currentCard ?: return
+    androidx.compose.runtime.key(card.id) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (uiState.title.isNotBlank()) {
+                Text(
+                    text = uiState.title,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .contentWidth()
+                        .padding(bottom = 10.dp),
+                )
+            }
+            LearnCardContent(card = card, onReady = onCardReady, modifier = Modifier.contentWidth())
+        }
+    }
+}
+
+@Composable
+private fun CardBottomBar(ready: Boolean, onNext: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            ChunkyButton(
+                onClick = onNext,
+                enabled = ready,
+                modifier = Modifier
+                    .contentWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp)
+                    .testTag(LessonTestTags.CARD_CONTINUE),
+            ) {
+                Text(stringResource(R.string.lesson_continue))
+            }
+        }
+    }
+}
+
 @Composable
 private fun LessonTopBar(uiState: LessonUiState, onClose: () -> Unit) {
-    val progressDescription = stringResource(R.string.lesson_progress_description, uiState.mastered, uiState.total)
+    val progressDescription = stringResource(R.string.lesson_progress_description, uiState.stepsDone, uiState.stepsTotal)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -186,7 +249,7 @@ private fun LessonTopBar(uiState: LessonUiState, onClose: () -> Unit) {
                 .semantics { contentDescription = progressDescription },
         )
         Text(
-            text = stringResource(R.string.lesson_progress_count, uiState.mastered, uiState.total),
+            text = stringResource(R.string.lesson_progress_count, uiState.stepsDone, uiState.stepsTotal),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 6.dp),

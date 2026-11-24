@@ -1,6 +1,8 @@
 package au.edu.jcu.codequest.di
 
+import au.edu.jcu.codequest.data.repository.BuiltInLearnCardRepository
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
+import au.edu.jcu.codequest.data.repository.LearnCardRepository
 import au.edu.jcu.codequest.data.repository.DataStoreSettingsRepository
 import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.NetworkTriviaRepository
@@ -36,6 +38,9 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTriviaRepository(impl: NetworkTriviaRepository): TriviaRepository
+
+    @Binds
+    abstract fun bindLearnCardRepository(impl: BuiltInLearnCardRepository): LearnCardRepository
 
     @Binds
     @Singleton

@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import au.edu.jcu.codequest.data.repository.BonusRound
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
+import au.edu.jcu.codequest.data.repository.LearnCardRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
 import au.edu.jcu.codequest.data.repository.TriviaRepository
+import au.edu.jcu.codequest.domain.learn.LearnCard
 import au.edu.jcu.codequest.domain.model.Answer
 import au.edu.jcu.codequest.domain.model.AttemptRecord
 import au.edu.jcu.codequest.domain.model.Question
@@ -56,8 +58,19 @@ data class LessonUiState(
     val total: Int = 0,
     /** Set once the lesson is finished and saved; the screen then navigates to the result. */
     val result: SessionResult? = null,
+    /** Teaching cards shown before the first question. */
+    val cards: List<LearnCard> = emptyList(),
+    val cardIndex: Int = 0,
+    /** True once the learner has interacted with the current card enough to move on. */
+    val cardReady: Boolean = false,
 ) {
-    val progress: Float get() = if (total == 0) 0f else mastered.toFloat() / total
+    /** The teaching card on screen, or null once the questions have started. */
+    val currentCard: LearnCard? get() = cards.getOrNull(cardIndex)
+
+    /** Cards and questions both count towards the progress bar. */
+    val stepsDone: Int get() = minOf(cardIndex, cards.size) + mastered
+    val stepsTotal: Int get() = cards.size + total
+    val progress: Float get() = if (stepsTotal == 0) 0f else stepsDone.toFloat() / stepsTotal
 
     /** True when enough has been entered for "Check" to make sense. */
     val canCheck: Boolean
@@ -80,6 +93,7 @@ class LessonViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val settingsRepository: SettingsRepository,
     private val soundPlayer: SoundPlayer,
+    private val learnCardRepository: LearnCardRepository,
 ) : ViewModel() {
 
     private val lessonId: String = checkNotNull(savedStateHandle.get<String>(Routes.ARG_LESSON_ID)) {
@@ -103,12 +117,30 @@ class LessonViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, loadFailed = false) }
         viewModelScope.launch {
             val questions = if (isBonus) loadBonusQuestions() else loadLessonQuestions()
+            val cards = if (isBonus) emptyList() else learnCardRepository.cardsFor(lessonId)
+            _uiState.update { it.copy(cards = cards, cardIndex = 0, cardReady = false) }
             if (questions.isEmpty()) {
                 _uiState.update { it.copy(isLoading = false, loadFailed = true) }
             } else {
                 attempts.clear()
                 session = QuizSession.start(questions)
                 showCurrentQuestion()
+            }
+        }
+    }
+
+    /** The card on screen reports that the learner has done what it asks. */
+    fun markCardReady() {
+        _uiState.update { if (it.currentCard != null) it.copy(cardReady = true) else it }
+    }
+
+    /** Moves past the current teaching card once it is ready. */
+    fun nextCard() {
+        _uiState.update { state ->
+            if (state.currentCard != null && state.cardReady) {
+                state.copy(cardIndex = state.cardIndex + 1, cardReady = false)
+            } else {
+                state
             }
         }
     }
@@ -145,7 +177,7 @@ class LessonViewModel @Inject constructor(
     fun check() {
         val state = _uiState.value
         val question = state.question ?: return
-        if (state.feedback != null || !state.canCheck) return
+        if (state.currentCard != null || state.feedback != null || !state.canCheck) return
 
         val answer = when (question.type) {
             QuestionType.CHOICE -> Answer.Choice(state.selectedChoice ?: return)
