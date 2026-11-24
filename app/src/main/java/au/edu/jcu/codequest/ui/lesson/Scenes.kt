@@ -94,7 +94,10 @@ fun SceneView(scene: Scene, modifier: Modifier = Modifier) {
 @Composable
 private fun sceneDescription(scene: Scene): String = when (scene) {
     is Scene.Fuel -> stringResource(R.string.scene_fuel, scene.level, scene.capacity)
-    is Scene.Types -> scene.values.joinToString { "${it.name}: ${it.type ?: stringResource(R.string.learn_type_error)}" }
+    is Scene.Types -> {
+        val error = stringResource(R.string.learn_type_error)
+        scene.values.joinToString { "${it.name}: ${it.type ?: error}" }
+    }
     is Scene.Radio -> scene.message?.let { stringResource(R.string.scene_radio, it) } ?: stringResource(R.string.scene_radio_silent)
     is Scene.Shields -> stringResource(
         if (scene.raised) R.string.scene_shields_up else R.string.scene_cruising,
