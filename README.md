@@ -12,6 +12,7 @@ Built for **CP3406 Assessment 3: Education App** (James Cook University) by Boho
 | Feature | What it does |
 |---|---|
 | Learning path | 4 units, 8 lessons and 40 questions on variables, types, conditionals, loops, functions, lambdas, collections and null safety. A lesson opens when the one before it is finished. |
+| Interactive teaching cards | The first five lessons open with three cards before any question: **Watch it** (step through code line by line and see variables change), **Try it** (predict the result first, then change values in the code and watch a scene react) and **Fix the bug** (find the line that breaks the program). |
 | Two question types | **Choice** questions (concepts, "what does this print?", fill the blank) and **ordering** questions, where the learner taps scrambled lines of code into a working order. |
 | Mastery, not lives | A wrong answer is explained and the question returns at the end of the lesson. There are no hearts, timers or penalties; mistakes only affect the 1 to 3 star rating. |
 | Bonus round | Downloads fresh computing questions from the Open Trivia DB API. The last downloaded round is cached, so it can be replayed offline. |
@@ -166,6 +167,7 @@ Local JVM tests (`app/src/test`), run with `./gradlew test`:
 | `BlockCollectionTest` | Every mission can be built from blocks collected in the lessons before it |
 | `SandboxMapTest` | Designing the free-build planet: one start and one beacon, saving and loading |
 | `FlightTest`, `FlightViewModelTest` | Rocket physics against the textbook range formula, asteroid hits, every flight being landable, and the launch screen state |
+| `LearnCatalogTest` | Every teaching card's simulation, prediction and goal matches what the Kotlin code really does |
 | `KotlinTokenizerTest` | Syntax colouring of code snippets |
 | `LessonViewModelTest`, `HomeViewModelTest`, `SettingsViewModelTest` | ViewModel state and the consent logic, using fake repositories |
 

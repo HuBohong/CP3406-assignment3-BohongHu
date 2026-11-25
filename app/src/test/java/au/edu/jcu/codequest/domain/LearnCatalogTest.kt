@@ -20,10 +20,10 @@ class LearnCatalogTest {
         card.slots.fold(listOf(emptyList())) { acc, slot -> acc.flatMap { prefix -> slot.options.map { prefix + it } } }
 
     @Test
-    fun firstFourLessonsHaveThreeCardsEach_andOtherLessonsNone() {
-        listOf("basics-1", "basics-2", "flow-1", "flow-2").forEach { assertEquals(3, LearnCatalog.forLesson(it).size) }
-        assertTrue(LearnCatalog.forLesson("fun-1").isEmpty())
-        assertEquals(LearnCatalog.all.size, LearnCatalog.all.map { it.id }.toSet().size)
+    fun firstFiveLessonsHaveThreeCardsEach_andOtherLessonsNone() {
+        assertEquals(listOf("basics-1", "basics-2", "flow-1", "flow-2", "fun-1"), LearnCatalog.lessonsWithCards)
+        LearnCatalog.lessonsWithCards.forEach { assertEquals(3, LearnCatalog.forLesson(it).size) }
+        assertTrue(LearnCatalog.forLesson("fun-2").isEmpty())
     }
 
     @Test
@@ -140,5 +140,29 @@ class LearnCatalogTest {
             assertEquals("${card.id} fixes one line", listOf(card.buggyLine - 1), changed)
         }
         assertNull(LearnCatalog.watchFuel.steps.first().variables.firstOrNull { !it.isVal })
+    }
+
+    @Test
+    fun hail_usesTheDefault_namedArgumentsInAnyOrder_andRejectsSwappedOnes() {
+        val card = LearnCatalog.hailPlayground
+
+        assertEquals(listOf("Hi Ada, crew of 1"), card.evaluate(listOf("\"Ada\"")).output)
+        assertEquals(listOf("Hi Ada, crew of 4"), card.evaluate(listOf("n = 4, to = \"Ada\"")).output)
+        val swapped = card.evaluate(listOf("4, \"Ada\""))
+        assertEquals(3, swapped.highlightedLine)
+        assertTrue(swapped.output.isEmpty())
+        assertTrue(card.isGoalMet(listOf("\"Ada\", 4")))
+        assertFalse(card.isGoalMet(listOf("\"Ada\"")))
+    }
+
+    @Test
+    fun boost_jumpsIntoTheFunctionAndBack() {
+        val lines = LearnCatalog.watchBoost.steps.map { it.line }
+
+        assertEquals(listOf(1, 4, 2, 4, 5), lines)
+        assertEquals(listOf("75"), LearnCatalog.watchBoost.steps.last().output)
+        // The parameter only exists while the body runs.
+        assertTrue(LearnCatalog.watchBoost.steps[2].variables.any { it.name == "fuel" })
+        assertTrue(LearnCatalog.watchBoost.steps[3].variables.none { it.name == "fuel" })
     }
 }

@@ -3,6 +3,7 @@ package au.edu.jcu.codequest.domain.learn
 /**
  * Teaching cards for the first lessons. Each lesson repairs one of Byte's ship systems,
  * which is what the scenes show: the fuel tank, the radio, the shields and the launch pad.
+ * Lesson 5 wraps those systems in functions: a booster and a radio hail.
  */
 object LearnCatalog {
 
@@ -11,10 +12,14 @@ object LearnCatalog {
         "basics-2" -> listOf(typesPlayground, watchRadio, typeBug)
         "flow-1" -> listOf(shieldsPlayground, whenPlayground, assignBug)
         "flow-2" -> listOf(launchPlayground, watchCountdown, offByOneBug)
+        "fun-1" -> listOf(watchBoost, hailPlayground, missingReturnBug)
         else -> emptyList()
     }
 
-    val all: List<LearnCard> get() = listOf("basics-1", "basics-2", "flow-1", "flow-2").flatMap(::forLesson)
+    /** Lessons that open with teaching cards: the first five on the path. */
+    val lessonsWithCards: List<String> = listOf("basics-1", "basics-2", "flow-1", "flow-2", "fun-1")
+
+    val all: List<LearnCard> get() = lessonsWithCards.flatMap(::forLesson)
 
     // ---------- Lesson 1: values and variables (fuel tank) ----------
 
@@ -374,5 +379,104 @@ object LearnCatalog {
         wrongLineHint = "launch(i) is fine. Which numbers does the range produce?",
         explanation = "0..5 includes 5. until leaves the end out, so 0 until 5 gives exactly 0, 1, 2, 3, 4. This is called an off-by-one error.",
         fixedOutput = listOf("0 1 2 3 4"),
+    )
+
+    // ---------- Lesson 5: writing functions (booster and radio) ----------
+
+    private fun boostVariables(fuel: String?, tank: String?) = buildList {
+        if (fuel != null) add(Variable("fuel", fuel, isVal = true))
+        if (tank != null) add(Variable("tank", tank, isVal = true))
+    }
+
+    val watchBoost = StepThrough(
+        id = "fun-1-watch",
+        title = "A call jumps in and comes back",
+        body = "Writing a function doesn't run it. Step through and watch the call jump into boost(), " +
+            "where the parameter fuel gets the value 50, and come back with the result.",
+        code = listOf(
+            "fun boost(fuel: Int): Int {",
+            "    return fuel + 25",
+            "}",
+            "val tank = boost(50)",
+            "println(tank)",
+        ),
+        steps = listOf(
+            // Line 1 only defines boost; nothing runs yet.
+            TraceStep(1, boostVariables(null, null), emptyList(), Scene.Fuel(0)),
+            // The call on line 4 starts...
+            TraceStep(4, boostVariables(null, null), emptyList(), Scene.Fuel(0)),
+            // ...and jumps into the body with the argument in the parameter.
+            TraceStep(2, boostVariables("50", null), emptyList(), Scene.Fuel(50)),
+            // The returned 75 lands in tank; the parameter is gone again.
+            TraceStep(4, boostVariables(null, "75"), emptyList(), Scene.Fuel(75)),
+            TraceStep(5, boostVariables(null, "75"), listOf("75"), Scene.Fuel(75)),
+        ),
+    )
+
+    /** What hail(...) prints for each argument list the learner can pick. */
+    private fun hail(arguments: String): RunResult = when (arguments) {
+        "\"Ada\"" -> RunResult(
+            output = listOf("Hi Ada, crew of 1"),
+            scene = Scene.Radio("Hi Ada, crew of 1"),
+            note = "Only one argument, so n uses its default value, 1.",
+        )
+        "\"Ada\", 4" -> RunResult(output = listOf("Hi Ada, crew of 4"), scene = Scene.Radio("Hi Ada, crew of 4"))
+        "n = 4, to = \"Ada\"" -> RunResult(
+            output = listOf("Hi Ada, crew of 4"),
+            scene = Scene.Radio("Hi Ada, crew of 4"),
+            note = "Named arguments say which parameter they are for, so their order doesn't matter.",
+        )
+        else -> RunResult(
+            output = emptyList(),
+            scene = Scene.Radio(null),
+            error = "Compile error on line 3: type mismatch, to needs a String",
+            highlightedLine = 3,
+            note = "Arguments fill the parameters in order: first to, then n. Swap them, or name them.",
+        )
+    }
+
+    val hailPlayground = Playground(
+        id = "fun-1-try",
+        title = "Arguments fill the parameters",
+        body = "hail() has two parameters, and n has a default. Change the arguments in the call and listen to the radio.",
+        code = listOf(
+            "fun hail(to: String, n: Int = 1) =",
+            "    \"Hi \$to, crew of \$n\"",
+            "println(hail({0}))",
+        ),
+        slots = listOf(
+            SlotSpec(
+                "Arguments",
+                listOf("\"Ada\"", "\"Ada\", 4", "4, \"Ada\"", "n = 4, to = \"Ada\""),
+                initial = 0,
+            ),
+        ),
+        prediction = Prediction(
+            question = "Before you run it: hail(\"Ada\") passes only one argument. What happens?",
+            options = listOf("Hi Ada, crew of 1", "Hi Ada, crew of ", "Hi Ada, crew of 0", "Compile error"),
+            correctIndex = 0,
+        ),
+        goal = "Make the radio say: Hi Ada, crew of 4",
+        run = { values -> hail(values[0]) },
+        goalCheck = { values -> hail(values[0]).output == listOf("Hi Ada, crew of 4") },
+    )
+
+    val missingReturnBug = FixTheBug(
+        id = "fun-1-fix",
+        title = "The answer never comes back",
+        body = "Byte wrote a function to double the engine power, but it doesn't compile. Tap the line that causes the problem.",
+        code = listOf(
+            "fun double(n: Int): Int {",
+            "    n * 2",
+            "}",
+            "println(double(21))",
+        ),
+        buggyLine = 2,
+        fixedLine = "    return n * 2",
+        problem = "Compile error on line 3: a 'return' expression is required in a function with a block body",
+        wrongLineHint = "The error points at the closing brace, but the missing word belongs on the line that works out the answer.",
+        explanation = "A function with { } and a return type must hand its result back with return. " +
+            "Without it, n * 2 is worked out and thrown away.",
+        fixedOutput = listOf("42"),
     )
 }
