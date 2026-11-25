@@ -20,7 +20,8 @@ class SettingsViewModelTest {
 
     private val settings = FakeSettingsRepository(UserSettings(onboardingDone = true, detailedHistory = true))
     private val progress = FakeProgressRepository()
-    private val viewModel = SettingsViewModel(settings, progress)
+    // Created on first use, after MainDispatcherRule has replaced Dispatchers.Main.
+    private val viewModel by lazy { SettingsViewModel(settings, progress) }
 
     @Test
     fun turningHistoryOff_alsoDeletesTheStoredAnswers() {
