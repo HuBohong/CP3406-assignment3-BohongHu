@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -105,6 +107,30 @@ private val PathBottomPadding = 44.dp
 /** Sideways position of each lesson along the winding path, repeating every four lessons. */
 private val NodeOffsets = listOf(0.dp, (-72).dp, 0.dp, 72.dp)
 
+private val PlanetSize = 112.dp
+
+/** The top bar and the bonus card come before the first unit in the map list. */
+private const val ITEMS_BEFORE_UNITS = 2
+
+/** The planet sits on the side with fewer stops; on a tie, units alternate sides. */
+private fun planetGoesLeft(offsets: List<Dp>, unitIndex: Int): Boolean {
+    val left = offsets.count { it < 0.dp }
+    val right = offsets.count { it > 0.dp }
+    return if (left != right) left < right else unitIndex % 2 == 0
+}
+
+/**
+ * The row the planet lines up with: one whose stop leans away from the planet (or sits in the
+ * middle), nearest the middle of the unit, so the planet never covers a stop.
+ */
+private fun planetRow(offsets: List<Dp>, planetOnLeft: Boolean): Int {
+    if (offsets.isEmpty()) return 0
+    val middle = (offsets.size - 1) / 2f
+    val away = offsets.indices.filter { if (planetOnLeft) offsets[it] > 0.dp else offsets[it] < 0.dp }
+    val clear = away.ifEmpty { offsets.indices.filter { offsets[it] == 0.dp } }.ifEmpty { offsets.indices.toList() }
+    return clear.minBy { kotlin.math.abs(it - middle) }
+}
+
 /** Teal for rocket flights, so they read as a different kind of stop from missions. */
 private val FlightNodeColors = ChunkyColors(face = Color(0xFF0F8FA8), edge = Color(0xFF0A6377), content = Color.White)
 
@@ -146,6 +172,18 @@ fun HomeScreen(
     LightSystemBarIcons()
     var openLessonId by rememberSaveable { mutableStateOf<String?>(null) }
     val currentLessonId = uiState.currentNodeId
+    val listState = rememberLazyListState()
+
+    // Opens the map at the learner's current unit, once; after that the map stays where they left it.
+    var openedAtCurrentUnit by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading) {
+        if (uiState.isLoading || openedAtCurrentUnit) return@LaunchedEffect
+        val unitPosition = uiState.units.indexOfFirst { unit ->
+            unit.lessons.any { it.id == currentLessonId } || unit.mission?.id == currentLessonId
+        }
+        if (unitPosition > 0) listState.scrollToItem(ITEMS_BEFORE_UNITS + unitPosition)
+        openedAtCurrentUnit = true
+    }
 
     Box(Modifier.fillMaxSize()) {
         SpaceBackground(Modifier.matchParentSize())
@@ -154,6 +192,7 @@ fun HomeScreen(
         } else {
             val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = topInset + 8.dp, bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -344,7 +383,8 @@ private fun UnitSection(
             )
         val areaHeight = PathTopPadding + NodeStep * (offsets.size - 1).coerceAtLeast(0) +
             CurrentNodeSize + NodeDepth + PathBottomPadding
-        val planetOnLeft = offsets.none { it < 0.dp }
+        val planetOnLeft = planetGoesLeft(offsets, unit.index)
+        val planetRow = planetRow(offsets, planetOnLeft)
         val density = LocalDensity.current
         val trail = CodeQuestTheme.colors.space.trail
 
@@ -356,9 +396,12 @@ private fun UnitSection(
             Planet(
                 style = PlanetStyle.forUnit(unit.index),
                 modifier = Modifier
-                    .size(112.dp)
-                    .align(if (planetOnLeft) Alignment.CenterStart else Alignment.CenterEnd)
-                    .offset(x = if (planetOnLeft) (-16).dp else 16.dp),
+                    .size(PlanetSize)
+                    .align(if (planetOnLeft) Alignment.TopStart else Alignment.TopEnd)
+                    .offset(
+                        x = if (planetOnLeft) (-16).dp else 16.dp,
+                        y = PathTopPadding + NodeStep * planetRow + CurrentNodeSize / 2 - PlanetSize / 2,
+                    ),
             )
 
             // Dotted flight path through the centre of every node.
