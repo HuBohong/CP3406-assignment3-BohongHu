@@ -178,6 +178,7 @@ emulator or device:
 |---|---|
 | `ProgressDaoTest` | Real Room queries against an in-memory database |
 | `OnboardingScreenTest`, `LessonScreenTest` | Compose GUI tests of the consent and activity screens |
+| `FlightScreenTest` | Compose GUI tests of the rocket flight: dials, Launch, and the landed and missed result panels |
 
 ## Running the app
 
