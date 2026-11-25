@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -86,6 +87,7 @@ import au.edu.jcu.codequest.domain.mission.MissionState
 import au.edu.jcu.codequest.domain.mission.PaletteBlock
 import au.edu.jcu.codequest.domain.mission.RepeatBlock
 import au.edu.jcu.codequest.domain.mission.Slot
+import au.edu.jcu.codequest.domain.mission.Tile
 import au.edu.jcu.codequest.domain.mission.WhileBlock
 import au.edu.jcu.codequest.ui.components.ByteMascot
 import au.edu.jcu.codequest.ui.components.ByteMood
@@ -236,6 +238,8 @@ private fun MissionScreen(
                         description = gridDescription(board),
                         maxBoardHeight = boardMax,
                         onCellTap = if (uiState.buildMode && uiState.isEditable) buildActions.paint else null,
+                        cellLabels = if (uiState.buildMode) sandboxCellLabels(board) else null,
+                        cellActionLabel = stringResource(R.string.sandbox_paint_cell),
                     )
                     is BossState -> BossArena(
                         board,
@@ -990,6 +994,37 @@ private fun failureBody(reason: FailureReason?): String = stringResource(
         FailureReason.SHIELDS_GONE -> R.string.mission_fail_shields_body
     },
 )
+
+/** "Row 2, column 3: rock" for every square of the free-build planet, row by row. */
+@Composable
+private fun sandboxCellLabels(state: GridState): List<String> {
+    val context = LocalContext.current
+    val names = mapOf(
+        "byte" to stringResource(R.string.sandbox_tool_start),
+        "crystal" to stringResource(R.string.sandbox_tool_crystal),
+        "rock" to stringResource(R.string.sandbox_tool_rock),
+        "crater" to stringResource(R.string.sandbox_tool_crater),
+        "goal" to stringResource(R.string.sandbox_tool_goal),
+        "floor" to stringResource(R.string.sandbox_tool_floor),
+    )
+    val level = state.level
+    return (0 until level.height).flatMap { row ->
+        (0 until level.width).map { column ->
+            val cell = Cell(column, row)
+            val what = when {
+                cell == state.byte -> names.getValue("byte")
+                cell in state.crystalsLeft -> names.getValue("crystal")
+                else -> when (level.tileAt(cell)) {
+                    Tile.ROCK -> names.getValue("rock")
+                    Tile.CRATER -> names.getValue("crater")
+                    Tile.GOAL -> names.getValue("goal")
+                    Tile.FLOOR, null -> names.getValue("floor")
+                }
+            }
+            context.getString(R.string.sandbox_cell, row + 1, column + 1, what)
+        }
+    }
+}
 
 @Composable
 private fun gridDescription(state: GridState): String = stringResource(

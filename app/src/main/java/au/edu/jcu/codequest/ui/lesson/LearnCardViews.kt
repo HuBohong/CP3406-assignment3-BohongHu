@@ -495,8 +495,16 @@ private fun StepThroughCard(card: StepThrough, onReady: () -> Unit) {
     }
 
     Text(stringResource(R.string.learn_variables), style = MaterialTheme.typography.titleSmall)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        step.variables.forEach { VariableCard(it) }
+    if (step.variables.isEmpty()) {
+        Text(
+            stringResource(R.string.learn_no_variables),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            step.variables.forEach { VariableCard(it) }
+        }
     }
     scene?.let { SceneView(it) }
     OutputConsole(lines = step.output, error = null)

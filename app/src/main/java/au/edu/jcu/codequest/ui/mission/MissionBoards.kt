@@ -6,6 +6,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -25,8 +27,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import au.edu.jcu.codequest.domain.mission.BossPhase
@@ -71,12 +77,25 @@ fun GridBoard(
     maxBoardHeight: Dp = 300.dp,
     /** Free-build only: called with the square the learner tapped. */
     onCellTap: ((Cell) -> Unit)? = null,
+    /**
+     * Free-build only: what each square holds, row by row. With these, every square becomes a
+     * button for TalkBack, so the planet can be designed without seeing the board.
+     */
+    cellLabels: List<String>? = null,
+    cellActionLabel: String? = null,
 ) {
     val level = state.level
+    val accessibleCells = onCellTap != null && cellLabels != null && cellLabels.size == level.width * level.height
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .clearAndSetSemantics { contentDescription = description },
+            .then(
+                if (accessibleCells) {
+                    Modifier.semantics { contentDescription = description }
+                } else {
+                    Modifier.clearAndSetSemantics { contentDescription = description }
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         val tile: Dp = minOf(maxWidth / level.width, maxBoardHeight / level.height)
@@ -129,6 +148,30 @@ fun GridBoard(
                         },
                         HeadingPointer,
                     )
+                }
+            }
+            if (accessibleCells && onCellTap != null && cellLabels != null) {
+                // Invisible, touch-transparent squares that only TalkBack sees.
+                Column(Modifier.matchParentSize()) {
+                    for (row in 0 until level.height) {
+                        Row {
+                            for (column in 0 until level.width) {
+                                val label = cellLabels[row * level.width + column]
+                                Box(
+                                    Modifier
+                                        .size(tile)
+                                        .semantics {
+                                            contentDescription = label
+                                            role = Role.Button
+                                            onClick(label = cellActionLabel) {
+                                                onCellTap(Cell(column, row))
+                                                true
+                                            }
+                                        },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

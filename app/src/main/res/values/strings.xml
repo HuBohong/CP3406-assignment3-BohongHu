@@ -216,6 +216,7 @@
     <string name="learn_decrease">Decrease %1$s</string>
     <string name="learn_increase">Increase %1$s</string>
     <string name="learn_variables">Variables</string>
+    <string name="learn_no_variables">None yet.</string>
     <string name="learn_step_of">Step %1$d of %2$d</string>
     <string name="learn_back">Back</string>
     <string name="learn_run_line">Run line %1$d</string>
@@ -259,6 +260,8 @@
     <string name="sandbox_done_building">Done</string>
     <string name="sandbox_build_help">Pick a tool, then tap squares on the planet. Tap Done to write the program.</string>
     <string name="sandbox_choose_tool">choose tool</string>
+    <string name="sandbox_cell">Row %1$d, column %2$d: %3$s</string>
+    <string name="sandbox_paint_cell">use the chosen tool here</string>
     <string name="sandbox_tool_floor">Floor</string>
     <string name="sandbox_tool_crystal">Crystal</string>
     <string name="sandbox_tool_rock">Rock</string>
