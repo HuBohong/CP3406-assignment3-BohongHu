@@ -64,6 +64,16 @@ object CodeQuestIcons {
         }
     }
 
+    /** Crystals collected in a grid mission. */
+    val Gem: ImageVector by lazy {
+        icon("Gem") { fill("M7 3h10l4.5 6L12 21.5 2.5 9z") }
+    }
+
+    /** Shields left in a boss fight. */
+    val Shield: ImageVector by lazy {
+        icon("Shield") { fill("M12 2.5l8 3v6c0 5-3.4 9.1-8 10.5C7.4 20.6 4 16.5 4 11.5v-6z") }
+    }
+
     /** Boss fights: a target. */
     val Target: ImageVector by lazy {
         icon("Target") {

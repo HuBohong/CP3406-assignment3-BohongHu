@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -168,6 +169,15 @@ fun HomeScreen(
                     )
                 }
             }
+            // Keeps the status bar readable when the map scrolls underneath it.
+            val scrim = CodeQuestTheme.colors.space.top
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(topInset + 8.dp)
+                    .background(Brush.verticalGradient(0f to scrim, 0.7f to scrim.copy(alpha = 0.9f), 1f to Color.Transparent)),
+            )
         }
     }
 }

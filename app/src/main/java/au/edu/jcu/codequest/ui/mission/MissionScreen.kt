@@ -2,6 +2,7 @@ package au.edu.jcu.codequest.ui.mission
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +25,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,11 +43,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -183,6 +190,8 @@ private fun MissionScreen(
             )
             return@Box
         }
+        // The board takes at most about a third of the screen, leaving room for the program.
+        val boardMax = (LocalConfiguration.current.screenHeightDp.dp * 0.36f).coerceIn(150.dp, 300.dp)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -199,8 +208,12 @@ private fun MissionScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 when (val board = uiState.boardState) {
-                    is GridState -> GridBoard(board, description = gridDescription(board))
-                    is BossState -> BossArena(board, description = bossDescription(board))
+                    is GridState -> GridBoard(board, description = gridDescription(board), maxBoardHeight = boardMax)
+                    is BossState -> BossArena(
+                        board,
+                        description = bossDescription(board),
+                        maxBoardHeight = minOf(boardMax, 260.dp),
+                    )
                     null -> Unit
                 }
                 GoalLine(mission = mission, showHint = uiState.showHint, onToggleHint = onToggleHint)
@@ -230,6 +243,7 @@ private fun MissionScreen(
             uiState.outcome?.let { outcome ->
                 ResultPanel(
                     outcome = outcome,
+                    boardState = uiState.boardState,
                     hasHint = !uiState.showHint,
                     onBackToMap = onExit,
                     onEdit = onBackToEditing,
@@ -272,11 +286,13 @@ private fun MissionTopBar(mission: Mission, state: MissionState?, onExit: () -> 
         }
         when (state) {
             is GridState -> StatusChip(
+                icon = CodeQuestIcons.Gem,
                 text = stringResource(R.string.mission_count, state.collected, state.level.crystals.size),
                 description = stringResource(R.string.mission_crystals_description, state.collected, state.level.crystals.size),
                 color = Color(0xFF8FF5E4),
             )
             is BossState -> StatusChip(
+                icon = CodeQuestIcons.Shield,
                 text = stringResource(R.string.mission_count, state.shields, state.level.shields),
                 description = stringResource(R.string.mission_shields_description, state.shields, state.level.shields),
                 color = Color(0xFFFFC94D),
@@ -287,7 +303,7 @@ private fun MissionTopBar(mission: Mission, state: MissionState?, onExit: () -> 
 }
 
 @Composable
-private fun StatusChip(text: String, description: String, color: Color) {
+private fun StatusChip(icon: ImageVector, text: String, description: String, color: Color) {
     val space = CodeQuestTheme.colors.space
     Row(
         modifier = Modifier
@@ -299,7 +315,7 @@ private fun StatusChip(text: String, description: String, color: Color) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(CodeQuestIcons.Flag, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
         Text(text = text, style = MaterialTheme.typography.labelLarge, color = color)
     }
 }
@@ -392,7 +408,7 @@ private fun BlockList(blocks: List<Block>, slot: Slot, ui: MissionUiState, actio
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         blocks.forEach { block -> BlockView(block, ui, actions) }
         if (ui.isEditable) {
-            SlotRow(isTarget = ui.target == slot, onClick = { actions.selectTarget(slot) })
+            SlotRow(isTarget = ui.target == slot, revision = ui.program, onClick = { actions.selectTarget(slot) })
         }
     }
 }
@@ -440,8 +456,10 @@ private fun BlockView(block: Block, ui: MissionUiState, actions: EditorActions) 
 
 /**
  * First line of a block. Tapping it shows its edit controls; the line that is running during a
- * replay gets an amber outline, matching the highlighted line in lesson code.
+ * replay gets an amber outline, matching the highlighted line in lesson code, and is scrolled
+ * into view so long programs can be followed while they run.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BlockHeader(
     block: Block,
@@ -453,8 +471,13 @@ private fun BlockHeader(
     val running = ui.runningBlockId == block.id
     val selected = ui.selectedBlockId == block.id && ui.isEditable
     val shape = RoundedCornerShape(10.dp)
+    val bringIntoView = remember { BringIntoViewRequester() }
+    LaunchedEffect(running) {
+        if (running) bringIntoView.bringIntoView()
+    }
     Column(
         modifier = Modifier
+            .bringIntoViewRequester(bringIntoView)
             .fillMaxWidth()
             .clip(shape)
             .background(style.tint)
@@ -589,12 +612,21 @@ private fun ClosingBrace(text: String, style: BlockStyle) {
     )
 }
 
-/** Where tapped toolbox blocks will go. Exactly one slot is the target at a time. */
+/**
+ * Where tapped toolbox blocks will go. Exactly one slot is the target at a time, and the
+ * program list scrolls to keep it in view as blocks are added ([revision] changes with every edit).
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SlotRow(isTarget: Boolean, onClick: () -> Unit) {
+private fun SlotRow(isTarget: Boolean, revision: Any?, onClick: () -> Unit) {
     val color = if (isTarget) Color(0xFFD98E00) else Color(0xFFB9B3D1)
+    val bringIntoView = remember { BringIntoViewRequester() }
+    LaunchedEffect(isTarget, revision) {
+        if (isTarget) bringIntoView.bringIntoView()
+    }
     Row(
         modifier = Modifier
+            .bringIntoViewRequester(bringIntoView)
             .fillMaxWidth()
             .heightIn(min = 36.dp)
             .clip(RoundedCornerShape(10.dp))
@@ -694,6 +726,7 @@ private fun Controls(
 @Composable
 private fun ResultPanel(
     outcome: MissionOutcome,
+    boardState: MissionState?,
     hasHint: Boolean,
     onBackToMap: () -> Unit,
     onEdit: () -> Unit,
@@ -727,7 +760,7 @@ private fun ResultPanel(
                 )
             }
             Text(
-                text = if (success) stringResource(R.string.mission_success_body) else failureBody(reason),
+                text = if (success) successBody(boardState) else failureBody(reason),
                 style = MaterialTheme.typography.bodyLarge,
                 color = textColor,
             )
@@ -749,6 +782,20 @@ private fun ResultPanel(
                 }
             }
         }
+    }
+}
+
+/**
+ * After a boss fight, says how many shields Byte kept: a perfect run is celebrated, and a run
+ * that took hits invites the learner to improve the program (the mission is already passed).
+ */
+@Composable
+private fun successBody(boardState: MissionState?): String {
+    val boss = boardState as? BossState ?: return stringResource(R.string.mission_success_body)
+    return if (boss.shields == boss.level.shields) {
+        stringResource(R.string.mission_success_boss_perfect)
+    } else {
+        stringResource(R.string.mission_success_boss_hit, boss.shields, boss.level.shields)
     }
 }
 

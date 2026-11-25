@@ -32,14 +32,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -76,6 +79,7 @@ fun CodeEditor(
     val colors = CodeQuestTheme.colors.editor
     val lines = remember(code) { code.lines() }
     val highlighted = remember(code, colors) { lines.map { highlightKotlin(it, colors) } }
+    val measurer = rememberTextMeasurer()
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
@@ -83,6 +87,10 @@ fun CodeEditor(
             .background(colors.background)
             .padding(vertical = 12.dp),
     ) {
+        val density = LocalDensity.current
+        val textStyle = remember(lines, maxWidth, density) {
+            fitCodeStyle(measurer, lines, available = with(density) { (maxWidth - CodeGutter).toPx() })
+        }
         Column(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
@@ -106,14 +114,14 @@ fun CodeEditor(
                     )
                     Text(
                         text = (index + 1).toString(),
-                        style = CodeTextStyle,
+                        style = textStyle,
                         color = colors.lineNumber,
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(30.dp),
                     )
                     Text(
                         text = line,
-                        style = CodeTextStyle,
+                        style = textStyle,
                         color = colors.text,
                         softWrap = false,
                         modifier = Modifier.padding(start = 14.dp, end = 16.dp),
@@ -122,6 +130,22 @@ fun CodeEditor(
             }
         }
     }
+}
+
+/** Room each editor line needs besides its text: current-line marker, line number and padding. */
+private val CodeGutter = 4.dp + 30.dp + 14.dp + 16.dp
+
+/** The code font never shrinks below this share of its normal size; longer lines scroll sideways. */
+private const val MinCodeScale = 0.8f
+
+/** Shrinks the code font a little when the longest line would not fit, so short lines need no sideways scrolling. */
+private fun fitCodeStyle(measurer: TextMeasurer, lines: List<String>, available: Float): TextStyle {
+    val longest = lines.maxByOrNull { it.length }.orEmpty()
+    if (longest.isEmpty() || available <= 0f) return CodeTextStyle
+    val natural = measurer.measure(longest, CodeTextStyle, softWrap = false, maxLines = 1).size.width.toFloat()
+    if (natural <= available) return CodeTextStyle
+    val scale = (available / natural).coerceAtLeast(MinCodeScale)
+    return CodeTextStyle.copy(fontSize = CodeTextStyle.fontSize * scale, lineHeight = CodeTextStyle.lineHeight * scale)
 }
 
 /** Colours one line of Kotlin with the editor palette. */

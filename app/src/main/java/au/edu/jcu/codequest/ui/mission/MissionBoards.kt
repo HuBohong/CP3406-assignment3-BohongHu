@@ -5,9 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -59,19 +57,25 @@ private val HeadingPointer = Color(0xFFFFC94D)
 /**
  * A grid planet: tiles, crystals, the beacon and Byte. Byte glides between squares and
  * shows which way it faces with a small arrow. The board describes itself to TalkBack.
+ *
+ * Tiles are square and as large as the width allows, but the board never grows taller than
+ * [maxBoardHeight], so tall maps shrink instead of spilling over the screen around them.
  */
 @Composable
-fun GridBoard(state: GridState, description: String, modifier: Modifier = Modifier) {
+fun GridBoard(
+    state: GridState,
+    description: String,
+    modifier: Modifier = Modifier,
+    maxBoardHeight: Dp = 300.dp,
+) {
     val level = state.level
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(max = 300.dp)
-            .aspectRatio(level.width.toFloat() / level.height.toFloat())
             .clearAndSetSemantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        val tile: Dp = minOf(maxWidth / level.width, maxHeight / level.height)
+        val tile: Dp = minOf(maxWidth / level.width, maxBoardHeight / level.height)
         val boardWidth = tile * level.width
         val boardHeight = tile * level.height
         Box(Modifier.size(boardWidth, boardHeight)) {
@@ -217,30 +221,37 @@ private fun DrawScope.drawCrystal(centre: Offset, r: Float) {
  * charged glow red; when the drone fires, a beam crosses them.
  */
 @Composable
-fun BossArena(state: BossState, description: String, modifier: Modifier = Modifier) {
+fun BossArena(
+    state: BossState,
+    description: String,
+    modifier: Modifier = Modifier,
+    maxBoardHeight: Dp = 260.dp,
+) {
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(max = 260.dp)
-            .aspectRatio(1.6f)
             .clearAndSetSemantics { contentDescription = description },
     ) {
-        val laneHeight = maxHeight / state.level.lanes
-        Canvas(Modifier.size(maxWidth, maxHeight)) {
-            drawArena(state, laneHeight.toPx())
-        }
-        val byteY by animateDpAsState(laneHeight * state.byteLane, label = "byteLane")
-        val hit = state.phase == BossPhase.FIRED && state.hitThisTurn
-        Box(
-            modifier = Modifier
-                .offset(x = 12.dp, y = byteY)
-                .size(laneHeight),
-            contentAlignment = Alignment.Center,
-        ) {
-            ByteMascot(
-                modifier = Modifier.size(laneHeight * 0.8f),
-                mood = if (hit) ByteMood.WORRIED else ByteMood.HAPPY,
-            )
+        // A wide arena (1.6 : 1) that gets shorter rather than overflowing on short screens.
+        val arenaHeight = minOf(maxWidth / 1.6f, maxBoardHeight)
+        val laneHeight = arenaHeight / state.level.lanes
+        Box(Modifier.size(maxWidth, arenaHeight)) {
+            Canvas(Modifier.size(maxWidth, arenaHeight)) {
+                drawArena(state, laneHeight.toPx())
+            }
+            val byteY by animateDpAsState(laneHeight * state.byteLane, label = "byteLane")
+            val hit = state.phase == BossPhase.FIRED && state.hitThisTurn
+            Box(
+                modifier = Modifier
+                    .offset(x = 12.dp, y = byteY)
+                    .size(laneHeight),
+                contentAlignment = Alignment.Center,
+            ) {
+                ByteMascot(
+                    modifier = Modifier.size(laneHeight * 0.8f),
+                    mood = if (hit) ByteMood.WORRIED else ByteMood.HAPPY,
+                )
+            }
         }
     }
 }

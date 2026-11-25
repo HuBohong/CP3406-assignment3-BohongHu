@@ -444,25 +444,26 @@ private fun StepThroughCard(card: StepThrough, onReady: () -> Unit) {
 
     CodeEditor(code = card.code.joinToString("\n"), highlightedLine = step.line)
 
-    Text(stringResource(R.string.learn_variables), style = MaterialTheme.typography.titleSmall)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        step.variables.forEach { VariableCard(it) }
-    }
-    scene?.let { SceneView(it) }
-    OutputConsole(lines = step.output, error = null)
-
-    Text(
-        text = stringResource(R.string.learn_step_of, index + 1, card.steps.size),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    if (last > 0) {
-        Slider(
-            value = index.toFloat(),
-            onValueChange = { index = it.roundToInt().coerceIn(0, last) },
-            valueRange = 0f..last.toFloat(),
-            steps = (last - 1).coerceAtLeast(0),
+    // The step controls sit right under the code, so "Run line" is in reach without scrolling.
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.learn_step_of, index + 1, card.steps.size),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (last > 0) {
+            Slider(
+                value = index.toFloat(),
+                onValueChange = { index = it.roundToInt().coerceIn(0, last) },
+                valueRange = 0f..last.toFloat(),
+                steps = (last - 1).coerceAtLeast(0),
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         ChunkyButton(
@@ -492,6 +493,13 @@ private fun StepThroughCard(card: StepThrough, onReady: () -> Unit) {
     if (!reachedEnd) {
         Text(stringResource(R.string.learn_watch_hint), style = MaterialTheme.typography.bodyMedium, color = CodeQuestTheme.colors.onXpSurface)
     }
+
+    Text(stringResource(R.string.learn_variables), style = MaterialTheme.typography.titleSmall)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        step.variables.forEach { VariableCard(it) }
+    }
+    scene?.let { SceneView(it) }
+    OutputConsole(lines = step.output, error = null)
 }
 
 /** One variable: its name, val (locked) or var, its value, and the old value when it just changed. */

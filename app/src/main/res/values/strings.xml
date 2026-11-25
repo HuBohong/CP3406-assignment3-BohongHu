@@ -173,6 +173,8 @@
     <string name="mission_edit">Edit</string>
     <string name="mission_success_title">Mission complete!</string>
     <string name="mission_success_body">Byte made it, thanks to your program. Another ship system is back online.</string>
+    <string name="mission_success_boss_perfect">Perfect run! Byte dodged every laser and kept all its shields.</string>
+    <string name="mission_success_boss_hit">Byte made it with %1$d of %2$d shields left. Can you change the program so no laser hits?</string>
     <string name="mission_back_to_map">Back to map</string>
     <string name="mission_keep_playing">Keep editing</string>
     <string name="mission_try_again">Change my program</string>
