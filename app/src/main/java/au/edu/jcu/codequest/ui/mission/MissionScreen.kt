@@ -336,7 +336,7 @@ private fun MissionTopBar(
         if (buildMode != null) {
             BuildToggle(buildMode = buildMode, enabled = buildEnabled, onToggle = onToggleBuild)
         }
-        if (state is GridState && (buildMode == null || state.level.crystals.isNotEmpty())) {
+        if (state is GridState && state.level.crystals.isNotEmpty()) {
             StatusChip(
                 icon = CodeQuestIcons.Gem,
                 text = stringResource(R.string.mission_count, state.collected, state.level.crystals.size),

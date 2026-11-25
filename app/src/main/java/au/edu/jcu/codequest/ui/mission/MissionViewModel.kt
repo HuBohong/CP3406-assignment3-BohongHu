@@ -212,8 +212,9 @@ class MissionViewModel @Inject constructor(
             while (true) {
                 val playback = _uiState.value.playback ?: return@launch
                 if (playback.finished) break
-                frameTimer.await(delayFor(playback.run.frames[playback.index + 1]))
-                _uiState.update { state -> state.playback?.let { state.copy(playback = it.copy(index = it.index + 1)) } ?: state }
+                val next = nextFrameToShow(playback.run.frames, playback.index)
+                frameTimer.await(delayFor(playback.run.frames[next]))
+                _uiState.update { state -> state.playback?.let { state.copy(playback = it.copy(index = next)) } ?: state }
             }
             _uiState.update { state -> state.playback?.let { state.copy(playback = it.copy(playing = false)) } ?: state }
             record(run)
@@ -260,6 +261,20 @@ class MissionViewModel @Inject constructor(
         _uiState.update { state -> if (state.isEditable) change(state) else state }
     }
 
+    /**
+     * The frame after [index], except when Byte has been stuck for a while: a loop that only
+     * checks conditions and changes nothing would otherwise replay for a minute and a half
+     * before the step limit ends it. After [IDLE_FRAMES_SHOWN] unchanged frames the replay
+     * jumps to the next change, or to the end.
+     */
+    private fun nextFrameToShow(frames: List<Frame>, index: Int): Int {
+        val next = index + 1
+        var idle = 0
+        while (idle < next && frames[next - idle].state == frames[next - idle - 1].state) idle++
+        if (idle <= IDLE_FRAMES_SHOWN) return next
+        return (next until frames.size).firstOrNull { frames[it].state != frames[it - 1].state } ?: frames.lastIndex
+    }
+
     private fun delayFor(frame: Frame): Long = when (frame.event) {
         null -> CHECK_FRAME_MS
         MissionEvent.CHARGING -> CHARGE_FRAME_MS
@@ -275,6 +290,7 @@ class MissionViewModel @Inject constructor(
 
     private companion object {
         const val CHECK_FRAME_MS = 220L
+        const val IDLE_FRAMES_SHOWN = 12
         const val ACTION_FRAME_MS = 420L
         const val CHARGE_FRAME_MS = 520L
         const val FIRE_FRAME_MS = 620L

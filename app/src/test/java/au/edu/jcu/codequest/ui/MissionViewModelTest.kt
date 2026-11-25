@@ -280,4 +280,26 @@ class MissionViewModelTest {
         assertFalse(viewModel.uiState.value.buildMode)
         assertFalse(viewModel.uiState.value.isSandbox)
     }
+
+    @Test
+    fun aLoopThatChangesNothing_isFastForwardedToTheEnd() {
+        var waits = 0
+        val viewModel = MissionViewModel(
+            savedStateHandle = SavedStateHandle(mapOf(Routes.ARG_MISSION_ID to "mission-4")),
+            missionRepository = missions,
+            frameTimer = FrameTimer { waits++ },
+            blockCollectionRepository = blocks,
+            sandboxRepository = sandbox,
+        )
+        // while (!atGoal()) { } never moves Byte, so the step limit ends the run.
+        viewModel.addBlock(PaletteBlock.While)
+        viewModel.toggleNegated(viewModel.uiState.value.program.blocks.single().id)
+
+        viewModel.run()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.outcome is MissionOutcome.Failure)
+        assertTrue(state.playback!!.finished)
+        assertTrue("replay waited $waits times", waits < 30)
+    }
 }
