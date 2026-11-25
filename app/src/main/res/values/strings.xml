@@ -240,4 +240,54 @@
     <string name="scene_launch">%1$d rockets launched: %2$s</string>
     <string name="scene_launch_none">No rockets launched</string>
     <string name="scene_countdown">Countdown: %1$s</string>
+
+    <!-- Collected code blocks -->
+    <string name="mission_block_locked_description">%1$s, not collected yet</string>
+    <string name="mission_blocks_locked_note">Locked blocks are collected by finishing lessons.</string>
+    <string name="result_new_blocks_title">New code blocks for Byte!</string>
+    <string name="result_new_blocks_body">They are now in Byte\'s toolbox for missions and your free-build planet.</string>
+
+    <!-- Free-build planet -->
+    <string name="home_sandbox_title">Free-build planet</string>
+    <string name="home_sandbox_blocks">%1$d of %2$d code blocks collected</string>
+    <string name="home_sandbox_body">Design your own planet, then program Byte with every block you have collected.</string>
+    <string name="home_sandbox_locked">Finish the first lesson to collect move() and open your own planet.</string>
+    <string name="home_sandbox_open">Build a planet</string>
+    <string name="sandbox_label">Your planet</string>
+    <string name="sandbox_success_body">Your planet works! Byte collected every crystal and reached the beacon. Build something harder?</string>
+    <string name="sandbox_build">Build</string>
+    <string name="sandbox_done_building">Done</string>
+    <string name="sandbox_build_help">Pick a tool, then tap squares on the planet. Tap Done to write the program.</string>
+    <string name="sandbox_choose_tool">choose tool</string>
+    <string name="sandbox_tool_floor">Floor</string>
+    <string name="sandbox_tool_crystal">Crystal</string>
+    <string name="sandbox_tool_rock">Rock</string>
+    <string name="sandbox_tool_crater">Crater</string>
+    <string name="sandbox_tool_goal">Beacon</string>
+    <string name="sandbox_tool_start">Byte</string>
+
+    <!-- Rocket flights -->
+    <string name="home_flight_kind">Rocket flight</string>
+    <string name="home_flight_locked">Finish this planet\'s mission to refuel the rocket.</string>
+    <string name="home_flight_start">Go to launch pad</string>
+    <string name="home_flight_again">Fly again</string>
+    <string name="flight_not_found">This flight could not be found.</string>
+    <string name="flight_close">Leave flight</string>
+    <string name="flight_label">Rocket flight to planet %1$d</string>
+    <string name="flight_launch">Launch</string>
+    <string name="flight_flying">Flying…</string>
+    <string name="flight_more">more</string>
+    <string name="flight_less">less</string>
+    <string name="flight_argument_description">%1$s is %2$d</string>
+    <string name="flight_sky_description">Flight map. The landing pad is %1$d units away. Asteroids in the way: %2$d.</string>
+    <string name="flight_landed_title">Touchdown!</string>
+    <string name="flight_landed_body">Byte landed safely on planet %1$d. Both arguments were just right.</string>
+    <string name="flight_short_title">Too short</string>
+    <string name="flight_short_body">The rocket came down before the pad and slipped into a wormhole. Try more power, or an angle closer to 45.</string>
+    <string name="flight_far_title">Too far</string>
+    <string name="flight_far_body">The rocket flew past the pad into a wormhole. Try less power, or move the angle further from 45.</string>
+    <string name="flight_asteroid_title">Asteroid hit</string>
+    <string name="flight_asteroid_body">The rocket clipped an asteroid. Fly lower and faster underneath it, or higher over the top.</string>
+    <string name="flight_adjust">Adjust and try again</string>
+    <string name="flight_fly_again">Try other values</string>
 </resources>

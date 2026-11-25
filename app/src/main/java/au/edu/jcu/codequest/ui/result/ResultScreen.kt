@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +46,7 @@ import au.edu.jcu.codequest.ui.components.ByteMascot
 import au.edu.jcu.codequest.ui.components.ByteMood
 import au.edu.jcu.codequest.ui.components.ChunkyButton
 import au.edu.jcu.codequest.ui.components.CodeQuestIcons
+import au.edu.jcu.codequest.ui.components.CodeTextStyle
 import au.edu.jcu.codequest.ui.components.LightSystemBarIcons
 import au.edu.jcu.codequest.ui.components.SpaceBackground
 import au.edu.jcu.codequest.ui.components.contentWidth
@@ -68,6 +71,8 @@ fun ResultScreen(
     isBonus: Boolean,
     onDone: () -> Unit,
     onPractiseAgain: () -> Unit,
+    /** Code blocks this lesson hands over, shown only the first time it is finished. */
+    newBlockLabels: List<String> = emptyList(),
 ) {
     BackHandler(onBack = onDone)
     LightSystemBarIcons()
@@ -120,6 +125,9 @@ fun ResultScreen(
                         modifier = Modifier.weight(1f),
                     )
                 }
+                if (newBlockLabels.isNotEmpty()) {
+                    NewBlocksCard(labels = newBlockLabels, modifier = Modifier.contentWidth().padding(top = 16.dp))
+                }
                 Text(
                     text = stringResource(R.string.result_no_pressure),
                     style = MaterialTheme.typography.bodyMedium,
@@ -158,6 +166,49 @@ fun ResultScreen(
                 }
             }
         }
+    }
+}
+
+/** The reward for a first finish: the code blocks Byte got back, as they look in the toolbox. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun NewBlocksCard(labels: List<String>, modifier: Modifier = Modifier) {
+    val space = CodeQuestTheme.colors.space
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(space.glass)
+            .border(2.dp, Color(0x66FFC94D), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.result_new_blocks_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = Color(0xFFFFC94D),
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            labels.forEach { label ->
+                Text(
+                    text = label,
+                    style = CodeTextStyle,
+                    color = Color.White,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF7F52FF))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.result_new_blocks_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = space.textSoft,
+        )
     }
 }
 

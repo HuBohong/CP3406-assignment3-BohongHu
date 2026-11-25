@@ -9,6 +9,8 @@ data class SessionResult(
     val stars: Int,
     val xp: Int,
     val isBonus: Boolean,
+    /** True the first time a lesson is finished, when its code blocks are collected. */
+    val firstCompletion: Boolean = false,
 )
 
 /** One submitted answer. Only stored when the learner opted in to detailed history. */

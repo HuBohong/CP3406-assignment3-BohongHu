@@ -1,7 +1,10 @@
 package au.edu.jcu.codequest.ui
 
+import au.edu.jcu.codequest.domain.mission.Action
+import au.edu.jcu.codequest.domain.mission.PaletteBlock
 import au.edu.jcu.codequest.domain.model.StatsOverview
 import au.edu.jcu.codequest.domain.model.UserSettings
+import au.edu.jcu.codequest.testutil.FakeBlockCollectionRepository
 import au.edu.jcu.codequest.testutil.FakeCurriculumRepository
 import au.edu.jcu.codequest.testutil.FakeMissionRepository
 import au.edu.jcu.codequest.testutil.FakeProgressRepository
@@ -45,7 +48,9 @@ class HomeViewModelTest {
         return { viewModel.uiState.value }
     }
 
-    private fun createViewModel() = HomeViewModel(curriculum, settings, progress, missions)
+    private val blocks = FakeBlockCollectionRepository(emptySet())
+
+    private fun createViewModel() = HomeViewModel(curriculum, settings, progress, missions, blocks)
 
     @Test
     fun lessons_areGroupedIntoUnitsInPathOrder() = runTest {
@@ -129,5 +134,29 @@ class HomeViewModelTest {
         assertEquals(70, state.totalXp)
         assertEquals("b", state.nextLesson?.id)
         assertEquals(1f / 3f, state.pathProgress, 0.001f)
+    }
+
+    @Test
+    fun flight_opensOnceTheUnitMissionIsDone() = runTest {
+        val read = collectState(createViewModel())
+
+        val before = read().units[0].flight
+        assertTrue(before!!.isFlight)
+        assertTrue(before.isLocked)
+
+        missions.completed.value = setOf("mission-1")
+        assertFalse(read().units[0].flight!!.isLocked)
+    }
+
+    @Test
+    fun blockCount_andSandbox_followCollectedBlocks() = runTest {
+        val read = collectState(createViewModel())
+        assertEquals(0, read().blocksCollected)
+        assertFalse(read().sandboxUnlocked)
+
+        blocks.collected.value = setOf(PaletteBlock.Act(Action.MOVE), PaletteBlock.Act(Action.COLLECT))
+
+        assertEquals(2, read().blocksCollected)
+        assertTrue(read().sandboxUnlocked)
     }
 }

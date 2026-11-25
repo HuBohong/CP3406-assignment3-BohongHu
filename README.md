@@ -17,6 +17,9 @@ Built for **CP3406 Assessment 3: Education App** (James Cook University) by Boho
 | Bonus round | Downloads fresh computing questions from the Open Trivia DB API. The last downloaded round is cached, so it can be replayed offline. |
 | Planet missions | Each unit ends with a mission instead of a test. Learners build a program from code blocks (`move()`, `repeat`, `if`/`else`, `while`) and watch Byte, the robot guide, run it on a grid planet, step by step, with the running block highlighted. |
 | Boss fight | Unit 3 ends with the laser drone: three lanes, eight attacks, and a dodging program that runs automatically every turn. A program that only ever moves up fails, which is how learners discover `else` and nested conditions. |
+| Code-block collection | Finishing a lesson for the first time hands Byte new code blocks (for example `repeat` and `while` after the loops lesson), shown on the result screen. Mission toolboxes show blocks that are not collected yet as locked. |
+| Rocket flights | After each planet's mission, an optional flight to the next planet. The learner sets the two arguments of `launch(angle, power)` and watches the parabola; falling short or overshooting drops the rocket into a wormhole, and asteroids block some routes. |
+| Free-build planet | A 6 x 6 planet the learner designs (rocks, craters, crystals, start and beacon), then programs with every block collected so far. The design is kept between visits. |
 | Statistics | Lessons completed, XP, first-try accuracy, days practised, accuracy by topic and recent sessions. |
 | Settings | Sound, bonus difficulty, theme, unlock-all-lessons, answer-history consent and "delete my progress". |
 
@@ -28,7 +31,8 @@ Built for **CP3406 Assessment 3: Education App** (James Cook University) by Boho
 | Landing page (Learn) | Progress summary, "Continue" shortcut, bonus round and the lesson path. | `ui/home` |
 | Activity (Lesson) | The quiz itself, with feedback after every answer. Also used for the bonus round. | `ui/lesson` |
 | Result | Stars, XP and first-try score for the finished lesson. | `ui/result` |
-| Mission | Block-programming challenge at the end of each unit, on a grid planet or in the boss arena. | `ui/mission` |
+| Mission | Block-programming challenge at the end of each unit, on a grid planet or in the boss arena. Also hosts the free-build planet (`mission/sandbox`). | `ui/mission` |
+| Rocket flight | Set `launch(angle, power)` and fly to the next planet. | `ui/flight` |
 | User statistics (Progress) | Headline numbers, accuracy by topic, recent sessions. | `ui/stats` |
 | Settings | Preferences and privacy controls. | `ui/settings` |
 
@@ -53,6 +57,8 @@ domain (pure Kotlin: models, QuizSession, Scoring, Progression) - used by every 
   of blocks with editing operations; `Interpreter` runs it against a `MissionWorld`
   (`GridWorld` or `BossWorld`) and records a frame for every action and condition check, which
   the mission screen replays. A step limit stops endless `while` loops instead of freezing the app.
+- **Flight physics** (`domain/flight/`) samples the parabola x = v·cos(θ)·t,
+  y = v·sin(θ)·t − g·t²/2 and reports where the rocket lands or what it hits.
 - **Domain layer** (`domain/`) has no Android imports. `QuizSession` is an immutable state
   machine for a lesson, `Scoring` turns a result into stars and XP, and `Progression` decides
   which lessons are open. This is where most unit tests are aimed.
@@ -73,7 +79,9 @@ domain (pure Kotlin: models, QuizSession, Scoring, Progression) - used by every 
 - Three top-level tabs (Learn, Progress, Settings) with saved and restored tab state.
 - **Adaptive**: a bottom navigation bar on phones and a navigation rail from 600 dp width.
 - `lesson/{lessonId}` takes a string argument that `LessonViewModel` reads from
-  `SavedStateHandle`. `result/...` takes typed integer arguments.
+  `SavedStateHandle`. `mission/{missionId}` and `flight/{flightId}` work the same way.
+  `result/...` takes typed integer arguments and a boolean that says whether new code blocks
+  were collected.
 - Back stack control: onboarding is removed once finished, and a finished lesson is replaced
   by its result so Back never reopens a completed quiz.
 - A deep link, `codequest://lesson/{lessonId}`, opens a lesson directly. Try it with
@@ -97,7 +105,10 @@ Queries worth a look: a `LEFT JOIN` that returns lessons with progress as a `Flo
 `GROUP BY` topic accuracy, a distinct-calendar-day count with `strftime`, and `@Transaction`
 methods that save a session atomically and keep the best star rating.
 
-Preferences (theme, sound, difficulty, consent) are stored with Preferences DataStore.
+Preferences (theme, sound, difficulty, consent) and the free-build planet's design are stored
+with Preferences DataStore. Collected code blocks need no storage of their own: they are worked
+out from completed lessons (`BlockCollection`), so they can never disagree with progress.
+Completed rocket flights reuse the `mission_progress` table.
 
 ### Networking
 
@@ -151,7 +162,10 @@ Local JVM tests (`app/src/test`), run with `./gradlew test`:
 | `TriviaRepositoryTest` | Network-first loading, cache fallback, JSON parsing |
 | `ProgramTest`, `MissionEngineTest` | Building and editing block programs; running them on grids and in the boss arena |
 | `MissionCatalogTest` | Every mission is solvable with its own toolbox, and common wrong programs fail |
-| `MissionViewModelTest` | Tap-to-build editing, replay, stepping and saving the result |
+| `MissionViewModelTest` | Tap-to-build editing, replay, stepping, saving the result, locked blocks and the free-build planet |
+| `BlockCollectionTest` | Every mission can be built from blocks collected in the lessons before it |
+| `SandboxMapTest` | Designing the free-build planet: one start and one beacon, saving and loading |
+| `FlightTest`, `FlightViewModelTest` | Rocket physics against the textbook range formula, asteroid hits, every flight being landable, and the launch screen state |
 | `KotlinTokenizerTest` | Syntax colouring of code snippets |
 | `LessonViewModelTest`, `HomeViewModelTest`, `SettingsViewModelTest` | ViewModel state and the consent logic, using fake repositories |
 

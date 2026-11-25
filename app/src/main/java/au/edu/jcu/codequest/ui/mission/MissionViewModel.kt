@@ -3,7 +3,11 @@ package au.edu.jcu.codequest.ui.mission
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import au.edu.jcu.codequest.data.repository.BlockCollectionRepository
 import au.edu.jcu.codequest.data.repository.MissionRepository
+import au.edu.jcu.codequest.data.repository.SandboxRepository
+import au.edu.jcu.codequest.domain.mission.BuildTool
+import au.edu.jcu.codequest.domain.mission.Cell
 import au.edu.jcu.codequest.domain.mission.CommandBlock
 import au.edu.jcu.codequest.domain.mission.Condition
 import au.edu.jcu.codequest.domain.mission.Frame
@@ -18,6 +22,8 @@ import au.edu.jcu.codequest.domain.mission.MissionState
 import au.edu.jcu.codequest.domain.mission.PaletteBlock
 import au.edu.jcu.codequest.domain.mission.Program
 import au.edu.jcu.codequest.domain.mission.RepeatBlock
+import au.edu.jcu.codequest.domain.mission.Sandbox
+import au.edu.jcu.codequest.domain.mission.SandboxMap
 import au.edu.jcu.codequest.domain.mission.Sensor
 import au.edu.jcu.codequest.domain.mission.Slot
 import au.edu.jcu.codequest.domain.mission.WhileBlock
@@ -29,6 +35,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -51,7 +58,19 @@ data class MissionUiState(
     val selectedBlockId: Int? = null,
     val playback: Playback? = null,
     val showHint: Boolean = false,
+    /** Blocks the learner has collected; null until known, when every block is offered. */
+    val collected: Set<PaletteBlock>? = null,
+    /** Free-build only: the learner's own planet. */
+    val sandboxMap: SandboxMap? = null,
+    /** Free-build only: true while taps on the board change the planet instead of nothing. */
+    val buildMode: Boolean = false,
+    val buildTool: BuildTool = BuildTool.ROCK,
 ) {
+    val isSandbox: Boolean get() = sandboxMap != null
+
+    /** A toolbox block can be used once it has been collected in a lesson. */
+    fun isCollected(item: PaletteBlock): Boolean = collected == null || item in collected
+
     /** What the board shows: the replay frame, or the starting layout while building. */
     val boardState: MissionState? get() = playback?.frame?.state ?: mission?.initialState
 
@@ -72,16 +91,39 @@ class MissionViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val missionRepository: MissionRepository,
     private val frameTimer: FrameTimer,
+    private val blockCollectionRepository: BlockCollectionRepository,
+    private val sandboxRepository: SandboxRepository,
 ) : ViewModel() {
 
     private val missionId: String = checkNotNull(savedStateHandle.get<String>(Routes.ARG_MISSION_ID)) {
         "MissionViewModel needs a missionId navigation argument"
     }
+    private val isSandbox = missionId == Sandbox.ID
 
-    private val _uiState = MutableStateFlow(MissionUiState(mission = MissionCatalog.byId(missionId)))
+    private val _uiState = MutableStateFlow(
+        if (isSandbox) {
+            MissionUiState(mission = Sandbox.mission(SandboxMap.DEFAULT), sandboxMap = SandboxMap.DEFAULT, buildMode = true)
+        } else {
+            MissionUiState(mission = MissionCatalog.byId(missionId))
+        },
+    )
     val uiState: StateFlow<MissionUiState> = _uiState.asStateFlow()
 
     private var playJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            blockCollectionRepository.observeCollected().collect { collected ->
+                _uiState.update { it.copy(collected = collected) }
+            }
+        }
+        if (isSandbox) {
+            viewModelScope.launch {
+                val saved = sandboxRepository.map.first()
+                _uiState.update { it.copy(sandboxMap = saved, mission = Sandbox.mission(saved)) }
+            }
+        }
+    }
 
     private val defaultSensor: Sensor
         get() = _uiState.value.mission?.sensors?.firstOrNull() ?: Sensor.PATH_AHEAD
@@ -89,6 +131,7 @@ class MissionViewModel @Inject constructor(
     // ----- Building the program -----
 
     fun addBlock(item: PaletteBlock) = edit { state ->
+        if (!state.isCollected(item)) return@edit state
         val program = state.program.insert(item, state.target, defaultSensor)
         if (program === state.program) return@edit state
         val newId = program.lastInsertedId
@@ -135,6 +178,26 @@ class MissionViewModel @Inject constructor(
 
     fun toggleHint() = _uiState.update { it.copy(showHint = !it.showHint) }
 
+    // ----- Free-build planet -----
+
+    /** Switches between designing the planet and writing the program. */
+    fun toggleBuildMode() = edit { state ->
+        if (state.isSandbox) state.copy(buildMode = !state.buildMode, selectedBlockId = null) else state
+    }
+
+    fun selectTool(tool: BuildTool) = edit { it.copy(buildTool = tool) }
+
+    /** Uses the chosen tool on a square of the learner's planet and saves the result. */
+    fun paint(cell: Cell) {
+        val state = _uiState.value
+        val map = state.sandboxMap ?: return
+        if (!state.isEditable || !state.buildMode) return
+        val painted = map.paint(cell, state.buildTool)
+        if (painted == map) return
+        _uiState.update { it.copy(sandboxMap = painted, mission = Sandbox.mission(painted)) }
+        viewModelScope.launch { sandboxRepository.save(painted) }
+    }
+
     // ----- Running -----
 
     /** Runs the whole program and replays it at a watchable speed. */
@@ -142,7 +205,9 @@ class MissionViewModel @Inject constructor(
         val mission = _uiState.value.mission ?: return
         val run = MissionRunner.run(mission, _uiState.value.program)
         playJob?.cancel()
-        _uiState.update { it.copy(playback = Playback(run, index = 0, playing = true), selectedBlockId = null) }
+        _uiState.update {
+            it.copy(playback = Playback(run, index = 0, playing = true), selectedBlockId = null, buildMode = false)
+        }
         playJob = viewModelScope.launch {
             while (true) {
                 val playback = _uiState.value.playback ?: return@launch
@@ -163,7 +228,9 @@ class MissionViewModel @Inject constructor(
         when {
             playback == null -> {
                 val run = MissionRunner.run(mission, state.program)
-                _uiState.update { it.copy(playback = Playback(run, index = 0, playing = false), selectedBlockId = null) }
+                _uiState.update {
+                    it.copy(playback = Playback(run, index = 0, playing = false), selectedBlockId = null, buildMode = false)
+                }
                 if (run.frames.size == 1) viewModelScope.launch { record(run) }
             }
             playback.playing || playback.finished -> Unit
@@ -183,6 +250,8 @@ class MissionViewModel @Inject constructor(
     }
 
     private suspend fun record(run: MissionRun) {
+        // The free-build planet is for play; it has no progress to save.
+        if (isSandbox) return
         missionRepository.recordAttempt(missionId, success = run.outcome == MissionOutcome.Success)
     }
 

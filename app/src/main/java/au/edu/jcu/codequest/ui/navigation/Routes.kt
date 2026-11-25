@@ -22,10 +22,13 @@ object Routes {
     const val ARG_FIRST_TRY = "firstTry"
     const val ARG_TOTAL = "total"
     const val ARG_MISSION_ID = "missionId"
+    const val ARG_FIRST_TIME = "firstTime"
+    const val ARG_FLIGHT_ID = "flightId"
 
     const val LESSON = "lesson/{$ARG_LESSON_ID}"
     const val MISSION = "mission/{$ARG_MISSION_ID}"
-    const val RESULT = "result/{$ARG_LESSON_ID}/{$ARG_STARS}/{$ARG_XP}/{$ARG_FIRST_TRY}/{$ARG_TOTAL}"
+    const val FLIGHT = "flight/{$ARG_FLIGHT_ID}"
+    const val RESULT = "result/{$ARG_LESSON_ID}/{$ARG_STARS}/{$ARG_XP}/{$ARG_FIRST_TRY}/{$ARG_TOTAL}/{$ARG_FIRST_TIME}"
 
     /** Lets other apps or adb open a lesson directly, e.g. codequest://lesson/basics-1 */
     const val LESSON_DEEP_LINK = "codequest://lesson/{$ARG_LESSON_ID}"
@@ -37,8 +40,10 @@ object Routes {
 
     fun mission(missionId: String) = "mission/$missionId"
 
+    fun flight(flightId: String) = "flight/$flightId"
+
     fun result(result: SessionResult) =
-        "result/${result.lessonId}/${result.stars}/${result.xp}/${result.firstTryCorrect}/${result.total}"
+        "result/${result.lessonId}/${result.stars}/${result.xp}/${result.firstTryCorrect}/${result.total}/${result.firstCompletion}"
 }
 
 /** The three tabs shown in the bottom bar (phones) or navigation rail (wide screens). */

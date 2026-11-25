@@ -3,6 +3,7 @@ package au.edu.jcu.codequest.ui.mission
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
@@ -67,6 +69,8 @@ fun GridBoard(
     description: String,
     modifier: Modifier = Modifier,
     maxBoardHeight: Dp = 300.dp,
+    /** Free-build only: called with the square the learner tapped. */
+    onCellTap: ((Cell) -> Unit)? = null,
 ) {
     val level = state.level
     BoxWithConstraints(
@@ -78,7 +82,18 @@ fun GridBoard(
         val tile: Dp = minOf(maxWidth / level.width, maxBoardHeight / level.height)
         val boardWidth = tile * level.width
         val boardHeight = tile * level.height
-        Box(Modifier.size(boardWidth, boardHeight)) {
+        val tapModifier = if (onCellTap == null) {
+            Modifier
+        } else {
+            Modifier.pointerInput(level.width, level.height, onCellTap) {
+                detectTapGestures { offset ->
+                    val x = (offset.x / (size.width.toFloat() / level.width)).toInt()
+                    val y = (offset.y / (size.height.toFloat() / level.height)).toInt()
+                    if (x in 0 until level.width && y in 0 until level.height) onCellTap(Cell(x, y))
+                }
+            }
+        }
+        Box(Modifier.size(boardWidth, boardHeight).then(tapModifier)) {
             Canvas(Modifier.size(boardWidth, boardHeight)) {
                 drawGrid(state, tile.toPx())
             }

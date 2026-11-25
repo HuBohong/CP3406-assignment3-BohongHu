@@ -263,9 +263,10 @@ class LessonViewModel @Inject constructor(
         // Clearing the feedback first makes a second tap on "Continue" a no-op while saving.
         _uiState.update { it.copy(feedback = null, mastered = finished.mastered, isLoading = true) }
         viewModelScope.launch {
+            val saved = result.copy(firstCompletion = !isBonus && !isCompletedBefore())
             val saveAttempts = settingsRepository.settings.first().detailedHistory
-            progressRepository.recordSession(result, attempts.toList(), saveAttempts)
-            _uiState.update { it.copy(isLoading = false, result = result) }
+            progressRepository.recordSession(saved, attempts.toList(), saveAttempts)
+            _uiState.update { it.copy(isLoading = false, result = saved) }
         }
     }
 }

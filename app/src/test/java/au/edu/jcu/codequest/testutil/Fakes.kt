@@ -1,11 +1,16 @@
 package au.edu.jcu.codequest.testutil
 
+import au.edu.jcu.codequest.data.repository.BlockCollectionRepository
 import au.edu.jcu.codequest.data.repository.BonusRound
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
 import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
+import au.edu.jcu.codequest.data.repository.SandboxRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
 import au.edu.jcu.codequest.data.repository.TriviaRepository
+import au.edu.jcu.codequest.domain.mission.BlockCollection
+import au.edu.jcu.codequest.domain.mission.PaletteBlock
+import au.edu.jcu.codequest.domain.mission.SandboxMap
 import au.edu.jcu.codequest.domain.model.AttemptRecord
 import au.edu.jcu.codequest.domain.model.Difficulty
 import au.edu.jcu.codequest.domain.model.Lesson
@@ -161,3 +166,20 @@ class FakeMissionRepository(completed: Set<String> = emptySet()) : MissionReposi
         if (success) completed.update { it + missionId }
     }
 }
+
+class FakeBlockCollectionRepository(collected: Set<PaletteBlock> = BlockCollection.all.toSet()) : BlockCollectionRepository {
+    val collected = MutableStateFlow(collected)
+
+    override fun observeCollected(): Flow<Set<PaletteBlock>> = this.collected
+}
+
+class FakeSandboxRepository(initial: SandboxMap = SandboxMap.DEFAULT) : SandboxRepository {
+    val saved = MutableStateFlow(initial)
+
+    override val map: Flow<SandboxMap> = saved
+
+    override suspend fun save(map: SandboxMap) {
+        saved.value = map
+    }
+}
+

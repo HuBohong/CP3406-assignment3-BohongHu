@@ -2,12 +2,17 @@ package au.edu.jcu.codequest.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import au.edu.jcu.codequest.data.repository.BlockCollectionRepository
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
 import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
+import au.edu.jcu.codequest.domain.flight.FlightCatalog
+import au.edu.jcu.codequest.domain.mission.Action
+import au.edu.jcu.codequest.domain.mission.BlockCollection
 import au.edu.jcu.codequest.domain.mission.MissionCatalog
 import au.edu.jcu.codequest.domain.mission.MissionKind
+import au.edu.jcu.codequest.domain.mission.PaletteBlock
 import au.edu.jcu.codequest.domain.model.LessonSummary
 import au.edu.jcu.codequest.domain.quiz.Progression
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +32,10 @@ data class LessonUi(
     val isLocked: Boolean,
 )
 
-/** The mission at the end of a unit. It opens once every lesson in the unit is done. */
+/**
+ * The mission at the end of a unit, which opens once every lesson in the unit is done, or the
+ * rocket flight to the next planet ([isFlight]), which opens once the mission is done.
+ */
 data class MissionNodeUi(
     val id: String,
     val title: String,
@@ -35,6 +43,7 @@ data class MissionNodeUi(
     val isBoss: Boolean,
     val isLocked: Boolean,
     val isCompleted: Boolean,
+    val isFlight: Boolean = false,
 )
 
 data class UnitUi(
@@ -42,6 +51,8 @@ data class UnitUi(
     val title: String,
     val lessons: List<LessonUi>,
     val mission: MissionNodeUi? = null,
+    /** Optional flight from this unit's planet to the next one. */
+    val flight: MissionNodeUi? = null,
 )
 
 data class HomeUiState(
@@ -53,6 +64,10 @@ data class HomeUiState(
     val nextLesson: LessonUi? = null,
     /** The lesson or mission the path points at next: the first one that is open and not done. */
     val currentNodeId: String? = null,
+    val blocksCollected: Int = 0,
+    val blocksTotal: Int = BlockCollection.all.size,
+    /** The free-build planet opens once Byte has move() to work with. */
+    val sandboxUnlocked: Boolean = false,
 ) {
     val pathProgress: Float
         get() = if (totalLessons == 0) 0f else completedLessons.toFloat() / totalLessons
@@ -65,6 +80,7 @@ class HomeViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
     progressRepository: ProgressRepository,
     missionRepository: MissionRepository,
+    blockCollectionRepository: BlockCollectionRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<HomeUiState> = combine(
@@ -72,8 +88,12 @@ class HomeViewModel @Inject constructor(
         settingsRepository.settings,
         progressRepository.observeOverview(),
         missionRepository.observeCompletedMissionIds(),
-    ) { lessons, settings, overview, completedMissions ->
-        buildState(lessons, settings.unlockAllLessons, overview.totalXp, completedMissions)
+        blockCollectionRepository.observeCollected(),
+    ) { lessons, settings, overview, completedMissions, collected ->
+        buildState(lessons, settings.unlockAllLessons, overview.totalXp, completedMissions).copy(
+            blocksCollected = collected.size,
+            sandboxUnlocked = PaletteBlock.Act(Action.MOVE) in collected,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeUiState())
 
     private fun buildState(
@@ -98,6 +118,7 @@ class HomeViewModel @Inject constructor(
             .groupBy { (summary, _) -> summary.lesson.unitIndex }
             .map { (unitIndex, pairs) ->
                 val unitLessons = pairs.map { it.second }
+                val unitMission = MissionCatalog.forUnit(unitIndex)
                 UnitUi(
                     index = unitIndex,
                     title = pairs.first().first.lesson.unitTitle,
@@ -110,6 +131,17 @@ class HomeViewModel @Inject constructor(
                             isBoss = mission.kind == MissionKind.BOSS,
                             isLocked = !unlockAll && unitLessons.any { !it.isCompleted },
                             isCompleted = mission.id in completedMissions,
+                        )
+                    },
+                    flight = FlightCatalog.fromUnit(unitIndex)?.let { flight ->
+                        MissionNodeUi(
+                            id = flight.id,
+                            title = flight.title,
+                            goal = flight.goal,
+                            isBoss = false,
+                            isLocked = !unlockAll && unitMission != null && unitMission.id !in completedMissions,
+                            isCompleted = flight.id in completedMissions,
+                            isFlight = true,
                         )
                     },
                 )

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
@@ -70,6 +71,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import au.edu.jcu.codequest.R
 import au.edu.jcu.codequest.domain.mission.Block
 import au.edu.jcu.codequest.domain.mission.BossState
+import au.edu.jcu.codequest.domain.mission.BuildTool
+import au.edu.jcu.codequest.domain.mission.Cell
 import au.edu.jcu.codequest.domain.mission.CommandBlock
 import au.edu.jcu.codequest.domain.mission.Condition
 import au.edu.jcu.codequest.domain.mission.FailureReason
@@ -157,8 +160,20 @@ fun MissionRoute(
         onBackToEditing = viewModel::backToEditing,
         onClear = viewModel::clearProgram,
         onToggleHint = viewModel::toggleHint,
+        buildActions = BuildActions(
+            toggle = viewModel::toggleBuildMode,
+            selectTool = viewModel::selectTool,
+            paint = viewModel::paint,
+        ),
     )
 }
+
+/** Free-build planet only: switching mode, choosing a tool and painting squares. */
+private data class BuildActions(
+    val toggle: () -> Unit,
+    val selectTool: (BuildTool) -> Unit,
+    val paint: (Cell) -> Unit,
+)
 
 /**
  * The end-of-unit mission: the board on top, the learner's program in the middle, the toolbox
@@ -175,6 +190,7 @@ private fun MissionScreen(
     onBackToEditing: () -> Unit,
     onClear: () -> Unit,
     onToggleHint: () -> Unit,
+    buildActions: BuildActions,
 ) {
     LightSystemBarIcons()
     val mission = uiState.mission
@@ -199,7 +215,14 @@ private fun MissionScreen(
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            MissionTopBar(mission = mission, state = uiState.boardState, onExit = onExit)
+            MissionTopBar(
+                mission = mission,
+                state = uiState.boardState,
+                onExit = onExit,
+                buildMode = if (uiState.isSandbox) uiState.buildMode else null,
+                buildEnabled = uiState.isEditable,
+                onToggleBuild = buildActions.toggle,
+            )
             Column(
                 modifier = Modifier
                     .contentWidth()
@@ -208,7 +231,12 @@ private fun MissionScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 when (val board = uiState.boardState) {
-                    is GridState -> GridBoard(board, description = gridDescription(board), maxBoardHeight = boardMax)
+                    is GridState -> GridBoard(
+                        board,
+                        description = gridDescription(board),
+                        maxBoardHeight = boardMax,
+                        onCellTap = if (uiState.buildMode && uiState.isEditable) buildActions.paint else null,
+                    )
                     is BossState -> BossArena(
                         board,
                         description = bossDescription(board),
@@ -223,7 +251,16 @@ private fun MissionScreen(
                     onClear = onClear,
                     modifier = Modifier.weight(1f),
                 )
-                Toolbox(mission = mission, enabled = uiState.isEditable, onAddBlock = onAddBlock)
+                if (uiState.buildMode) {
+                    BuildToolbar(selected = uiState.buildTool, onSelect = buildActions.selectTool)
+                } else {
+                    Toolbox(
+                        mission = mission,
+                        enabled = uiState.isEditable,
+                        isCollected = uiState::isCollected,
+                        onAddBlock = onAddBlock,
+                    )
+                }
             }
             Controls(
                 uiState = uiState,
@@ -244,6 +281,7 @@ private fun MissionScreen(
                 ResultPanel(
                     outcome = outcome,
                     boardState = uiState.boardState,
+                    isSandbox = uiState.isSandbox,
                     hasHint = !uiState.showHint,
                     onBackToMap = onExit,
                     onEdit = onBackToEditing,
@@ -258,7 +296,15 @@ private fun MissionScreen(
 }
 
 @Composable
-private fun MissionTopBar(mission: Mission, state: MissionState?, onExit: () -> Unit) {
+private fun MissionTopBar(
+    mission: Mission,
+    state: MissionState?,
+    onExit: () -> Unit,
+    /** Null for the built-in missions; on the free-build planet, whether Build is on. */
+    buildMode: Boolean? = null,
+    buildEnabled: Boolean = true,
+    onToggleBuild: () -> Unit = {},
+) {
     val space = CodeQuestTheme.colors.space
     Row(
         modifier = Modifier
@@ -275,29 +321,36 @@ private fun MissionTopBar(mission: Mission, state: MissionState?, onExit: () -> 
                 .semantics(mergeDescendants = true) { heading() },
         ) {
             Text(
-                text = stringResource(
-                    if (mission.kind == MissionKind.BOSS) R.string.mission_boss_label else R.string.mission_unit_label,
-                    mission.unitIndex,
-                ),
+                text = when {
+                    buildMode != null -> stringResource(R.string.sandbox_label)
+                    else -> stringResource(
+                        if (mission.kind == MissionKind.BOSS) R.string.mission_boss_label else R.string.mission_unit_label,
+                        mission.unitIndex,
+                    )
+                },
                 style = MaterialTheme.typography.labelMedium,
                 color = space.textSoft,
             )
             Text(text = mission.title, style = MaterialTheme.typography.titleLarge, color = Color.White)
         }
-        when (state) {
-            is GridState -> StatusChip(
+        if (buildMode != null) {
+            BuildToggle(buildMode = buildMode, enabled = buildEnabled, onToggle = onToggleBuild)
+        }
+        if (state is GridState && (buildMode == null || state.level.crystals.isNotEmpty())) {
+            StatusChip(
                 icon = CodeQuestIcons.Gem,
                 text = stringResource(R.string.mission_count, state.collected, state.level.crystals.size),
                 description = stringResource(R.string.mission_crystals_description, state.collected, state.level.crystals.size),
                 color = Color(0xFF8FF5E4),
             )
-            is BossState -> StatusChip(
+        }
+        if (state is BossState) {
+            StatusChip(
                 icon = CodeQuestIcons.Shield,
                 text = stringResource(R.string.mission_count, state.shields, state.level.shields),
                 description = stringResource(R.string.mission_shields_description, state.shields, state.level.shields),
                 color = Color(0xFFFFC94D),
             )
-            null -> Unit
         }
     }
 }
@@ -649,32 +702,138 @@ private fun SlotRow(isTarget: Boolean, revision: Any?, onClick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Toolbox(mission: Mission, enabled: Boolean, onAddBlock: (PaletteBlock) -> Unit) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+private fun Toolbox(
+    mission: Mission,
+    enabled: Boolean,
+    isCollected: (PaletteBlock) -> Boolean,
+    onAddBlock: (PaletteBlock) -> Unit,
+) {
+    val space = CodeQuestTheme.colors.space
+    val anyLocked = mission.palette.any { !isCollected(it) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            mission.palette.forEach { item ->
+                val collected = isCollected(item)
+                val style = styleFor(item)
+                val lockedDescription = stringResource(R.string.mission_block_locked_description, item.label)
+                ChunkySurface(
+                    colors = if (collected) {
+                        ChunkyColors(face = style.bar, edge = style.bar.darker(), content = Color.White)
+                    } else {
+                        ChunkyColors(face = space.lockFill, edge = space.lockEdge, content = space.lockInk)
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    depth = 4.dp,
+                    enabled = enabled && collected,
+                    onClickLabel = stringResource(R.string.mission_add_block),
+                    onClick = { onAddBlock(item) },
+                    modifier = Modifier
+                        .testTag(MissionTestTags.palette(item.label))
+                        .then(if (collected) Modifier else Modifier.semantics { contentDescription = lockedDescription }),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        if (!collected) {
+                            Icon(Icons.Filled.Lock, contentDescription = null, tint = space.lockInk, modifier = Modifier.size(14.dp))
+                        }
+                        Text(
+                            text = item.label,
+                            style = BlockText,
+                            color = when {
+                                !collected -> space.lockInk
+                                enabled -> Color.White
+                                else -> Color.White.copy(alpha = 0.5f)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        if (anyLocked) {
+            Text(
+                text = stringResource(R.string.mission_blocks_locked_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = space.textSoft,
+            )
+        }
+    }
+}
+
+/** Free-build planet: a toggle between designing the planet and writing the program. */
+@Composable
+private fun BuildToggle(buildMode: Boolean, enabled: Boolean, onToggle: () -> Unit) {
+    val space = CodeQuestTheme.colors.space
+    TextButton(
+        onClick = onToggle,
+        enabled = enabled,
+        modifier = Modifier.padding(end = 6.dp),
     ) {
-        mission.palette.forEach { item ->
-            val style = styleFor(item)
-            ChunkySurface(
-                colors = ChunkyColors(face = style.bar, edge = style.bar.darker(), content = Color.White),
-                shape = RoundedCornerShape(12.dp),
-                depth = 4.dp,
-                enabled = enabled,
-                onClickLabel = stringResource(R.string.mission_add_block),
-                onClick = { onAddBlock(item) },
-                modifier = Modifier.testTag(MissionTestTags.palette(item.label)),
-            ) {
-                Text(
-                    text = item.label,
-                    style = BlockText,
-                    color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
-                )
+        Text(
+            text = stringResource(if (buildMode) R.string.sandbox_done_building else R.string.sandbox_build),
+            color = if (enabled) Color(0xFFFFC94D) else space.textSoft,
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+}
+
+/** The tools for designing the free-build planet. The chosen one is outlined. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BuildToolbar(selected: BuildTool, onSelect: (BuildTool) -> Unit) {
+    val space = CodeQuestTheme.colors.space
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.sandbox_build_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = space.textSoft,
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            BuildTool.entries.forEach { tool ->
+                val isSelected = tool == selected
+                ChunkySurface(
+                    colors = ChunkyColors(
+                        face = if (isSelected) Color(0xFF5A32D6) else space.glass,
+                        edge = Color(0x40000000),
+                        content = Color.White,
+                        border = if (isSelected) Color(0xFFFFC94D) else space.glassBorder,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    depth = 4.dp,
+                    borderWidth = 2.dp,
+                    onClickLabel = stringResource(R.string.sandbox_choose_tool),
+                    onClick = { onSelect(tool) },
+                    modifier = Modifier.semantics { this.selected = isSelected },
+                ) {
+                    Text(
+                        text = stringResource(toolLabel(tool)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                }
             }
         }
     }
+}
+
+private fun toolLabel(tool: BuildTool): Int = when (tool) {
+    BuildTool.FLOOR -> R.string.sandbox_tool_floor
+    BuildTool.CRYSTAL -> R.string.sandbox_tool_crystal
+    BuildTool.ROCK -> R.string.sandbox_tool_rock
+    BuildTool.CRATER -> R.string.sandbox_tool_crater
+    BuildTool.GOAL -> R.string.sandbox_tool_goal
+    BuildTool.START -> R.string.sandbox_tool_start
 }
 
 private fun Color.darker(): Color = Color(red * 0.72f, green * 0.72f, blue * 0.72f, alpha)
@@ -727,6 +886,7 @@ private fun Controls(
 private fun ResultPanel(
     outcome: MissionOutcome,
     boardState: MissionState?,
+    isSandbox: Boolean,
     hasHint: Boolean,
     onBackToMap: () -> Unit,
     onEdit: () -> Unit,
@@ -760,7 +920,11 @@ private fun ResultPanel(
                 )
             }
             Text(
-                text = if (success) successBody(boardState) else failureBody(reason),
+                text = when {
+                    !success -> failureBody(reason)
+                    isSandbox -> stringResource(R.string.sandbox_success_body)
+                    else -> successBody(boardState)
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = textColor,
             )

@@ -1,15 +1,19 @@
 package au.edu.jcu.codequest.di
 
+import au.edu.jcu.codequest.data.repository.BlockCollectionRepository
 import au.edu.jcu.codequest.data.repository.BuiltInLearnCardRepository
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
-import au.edu.jcu.codequest.data.repository.LearnCardRepository
+import au.edu.jcu.codequest.data.repository.DataStoreSandboxRepository
 import au.edu.jcu.codequest.data.repository.DataStoreSettingsRepository
+import au.edu.jcu.codequest.data.repository.LearnCardRepository
 import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.NetworkTriviaRepository
-import au.edu.jcu.codequest.data.repository.OfflineMissionRepository
 import au.edu.jcu.codequest.data.repository.OfflineCurriculumRepository
+import au.edu.jcu.codequest.data.repository.OfflineMissionRepository
 import au.edu.jcu.codequest.data.repository.OfflineProgressRepository
+import au.edu.jcu.codequest.data.repository.ProgressBlockCollectionRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
+import au.edu.jcu.codequest.data.repository.SandboxRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
 import au.edu.jcu.codequest.data.repository.TriviaRepository
 import au.edu.jcu.codequest.util.DelayFrameTimer
@@ -49,6 +53,13 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
+
+    @Binds
+    abstract fun bindBlockCollectionRepository(impl: ProgressBlockCollectionRepository): BlockCollectionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSandboxRepository(impl: DataStoreSandboxRepository): SandboxRepository
 
     @Binds
     abstract fun bindSoundPlayer(impl: ToneSoundPlayer): SoundPlayer

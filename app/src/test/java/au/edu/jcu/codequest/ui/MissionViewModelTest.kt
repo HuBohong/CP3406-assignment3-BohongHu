@@ -2,6 +2,8 @@ package au.edu.jcu.codequest.ui
 
 import androidx.lifecycle.SavedStateHandle
 import au.edu.jcu.codequest.domain.mission.Action
+import au.edu.jcu.codequest.domain.mission.BuildTool
+import au.edu.jcu.codequest.domain.mission.Cell
 import au.edu.jcu.codequest.domain.mission.CommandBlock
 import au.edu.jcu.codequest.domain.mission.FailureReason
 import au.edu.jcu.codequest.domain.mission.GridState
@@ -10,9 +12,13 @@ import au.edu.jcu.codequest.domain.mission.MissionCatalog
 import au.edu.jcu.codequest.domain.mission.MissionOutcome
 import au.edu.jcu.codequest.domain.mission.PaletteBlock
 import au.edu.jcu.codequest.domain.mission.RepeatBlock
+import au.edu.jcu.codequest.domain.mission.Sandbox
+import au.edu.jcu.codequest.domain.mission.SandboxMap
 import au.edu.jcu.codequest.domain.mission.Sensor
 import au.edu.jcu.codequest.domain.mission.Slot
+import au.edu.jcu.codequest.testutil.FakeBlockCollectionRepository
 import au.edu.jcu.codequest.testutil.FakeMissionRepository
+import au.edu.jcu.codequest.testutil.FakeSandboxRepository
 import au.edu.jcu.codequest.testutil.MainDispatcherRule
 import au.edu.jcu.codequest.ui.mission.MissionViewModel
 import au.edu.jcu.codequest.ui.navigation.Routes
@@ -35,10 +41,15 @@ class MissionViewModelTest {
     /** Replays instantly but remembers how long each frame would have waited. */
     private val instantTimer = FrameTimer { waits += it }
 
+    private val blocks = FakeBlockCollectionRepository()
+    private val sandbox = FakeSandboxRepository()
+
     private fun createViewModel(missionId: String) = MissionViewModel(
         savedStateHandle = SavedStateHandle(mapOf(Routes.ARG_MISSION_ID to missionId)),
         missionRepository = missions,
         frameTimer = instantTimer,
+        blockCollectionRepository = blocks,
+        sandboxRepository = sandbox,
     )
 
     private val move = PaletteBlock.Act(Action.MOVE)
@@ -180,5 +191,93 @@ class MissionViewModelTest {
         assertEquals(2, viewModel.uiState.value.runningBlockId)
         assertEquals(MissionOutcome.Failure(FailureReason.CRYSTALS_LEFT), viewModel.uiState.value.outcome)
         assertEquals(listOf("mission-1" to false), missions.attempts)
+    }
+
+    // ----- Collected blocks -----
+
+    @Test
+    fun blocksNotYetCollected_cannotBeAdded() {
+        blocks.collected.value = setOf(move)
+        val viewModel = createViewModel("mission-2")
+
+        viewModel.addBlock(collect)
+        assertEquals(0, viewModel.uiState.value.program.size)
+        assertFalse(viewModel.uiState.value.isCollected(collect))
+
+        viewModel.addBlock(move)
+        assertEquals(1, viewModel.uiState.value.program.size)
+    }
+
+    @Test
+    fun collectingABlockLater_makesItUsable() {
+        blocks.collected.value = setOf(move)
+        val viewModel = createViewModel("mission-2")
+
+        blocks.collected.value = setOf(move, collect)
+        viewModel.addBlock(collect)
+
+        assertEquals(1, viewModel.uiState.value.program.size)
+    }
+
+    // ----- Free-build planet -----
+
+    @Test
+    fun sandbox_loadsTheSavedPlanetInBuildMode() {
+        val saved = SandboxMap.DEFAULT.paint(Cell(3, 0), BuildTool.CRYSTAL)
+        sandbox.saved.value = saved
+
+        val state = createViewModel(Sandbox.ID).uiState.value
+
+        assertTrue(state.isSandbox)
+        assertTrue(state.buildMode)
+        assertEquals(saved, state.sandboxMap)
+        assertEquals(saved.toLevel(), state.mission?.grid)
+    }
+
+    @Test
+    fun sandbox_paintingChangesTheBoardAndSavesIt() {
+        val viewModel = createViewModel(Sandbox.ID)
+
+        viewModel.selectTool(BuildTool.ROCK)
+        viewModel.paint(Cell(1, 0))
+
+        assertEquals('#', viewModel.uiState.value.sandboxMap?.symbolAt(Cell(1, 0)))
+        assertEquals('#', sandbox.saved.value.symbolAt(Cell(1, 0)))
+    }
+
+    @Test
+    fun sandbox_paintingOnlyWorksInBuildMode() {
+        val viewModel = createViewModel(Sandbox.ID)
+        viewModel.toggleBuildMode()
+
+        viewModel.paint(Cell(1, 0))
+
+        assertFalse(viewModel.uiState.value.buildMode)
+        assertEquals('.', viewModel.uiState.value.sandboxMap?.symbolAt(Cell(1, 0)))
+    }
+
+    @Test
+    fun sandbox_runsTheLearnersPlanetWithoutSavingProgress() {
+        // Default planet: Byte at the top left facing east, so one move() does not reach the beacon.
+        val viewModel = createViewModel(Sandbox.ID)
+        viewModel.toggleBuildMode()
+        viewModel.addBlock(move)
+
+        viewModel.run()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.buildMode)
+        assertTrue(state.outcome is MissionOutcome.Failure)
+        assertTrue(missions.attempts.isEmpty())
+    }
+
+    @Test
+    fun regularMission_cannotEnterBuildMode() {
+        val viewModel = createViewModel("mission-1")
+
+        viewModel.toggleBuildMode()
+
+        assertFalse(viewModel.uiState.value.buildMode)
+        assertFalse(viewModel.uiState.value.isSandbox)
     }
 }

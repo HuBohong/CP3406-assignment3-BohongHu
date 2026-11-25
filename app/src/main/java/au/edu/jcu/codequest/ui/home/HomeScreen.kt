@@ -91,6 +91,7 @@ import au.edu.jcu.codequest.ui.theme.UnitColors
 object HomeTestTags {
     const val BONUS = "home_bonus"
     const val START = "home_popover_start"
+    const val SANDBOX = "home_sandbox"
     fun node(lessonId: String) = "home_node_$lessonId"
 }
 
@@ -104,6 +105,9 @@ private val PathBottomPadding = 44.dp
 /** Sideways position of each lesson along the winding path, repeating every four lessons. */
 private val NodeOffsets = listOf(0.dp, (-72).dp, 0.dp, 72.dp)
 
+/** Teal for rocket flights, so they read as a different kind of stop from missions. */
+private val FlightNodeColors = ChunkyColors(face = Color(0xFF0F8FA8), edge = Color(0xFF0A6377), content = Color.White)
+
 private fun nodeOffset(lessonNumber: Int): Dp = NodeOffsets[(lessonNumber - 1).mod(NodeOffsets.size)]
 
 @Composable
@@ -111,10 +115,19 @@ fun HomeRoute(
     onOpenLesson: (String) -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenBonus: () -> Unit,
+    onOpenFlight: (String) -> Unit,
+    onOpenSandbox: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    HomeScreen(uiState = uiState, onOpenLesson = onOpenLesson, onOpenMission = onOpenMission, onOpenBonus = onOpenBonus)
+    HomeScreen(
+        uiState = uiState,
+        onOpenLesson = onOpenLesson,
+        onOpenMission = onOpenMission,
+        onOpenBonus = onOpenBonus,
+        onOpenFlight = onOpenFlight,
+        onOpenSandbox = onOpenSandbox,
+    )
 }
 
 /**
@@ -127,6 +140,8 @@ fun HomeScreen(
     onOpenLesson: (String) -> Unit,
     onOpenMission: (String) -> Unit,
     onOpenBonus: () -> Unit,
+    onOpenFlight: (String) -> Unit = {},
+    onOpenSandbox: () -> Unit = {},
 ) {
     LightSystemBarIcons()
     var openLessonId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -165,7 +180,20 @@ fun HomeScreen(
                             openLessonId = null
                             onOpenMission(id)
                         },
+                        onStartFlight = { id ->
+                            openLessonId = null
+                            onOpenFlight(id)
+                        },
                         modifier = Modifier.contentWidth().padding(top = 24.dp),
+                    )
+                }
+                item(key = "sandbox") {
+                    SandboxCard(
+                        collected = uiState.blocksCollected,
+                        total = uiState.blocksTotal,
+                        unlocked = uiState.sandboxUnlocked,
+                        onOpen = onOpenSandbox,
+                        modifier = Modifier.contentWidth().padding(top = 8.dp),
                     )
                 }
             }
@@ -297,6 +325,7 @@ private fun UnitSection(
     onDismissPopover: () -> Unit,
     onStartLesson: (String) -> Unit,
     onStartMission: (String) -> Unit,
+    onStartFlight: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -304,9 +333,15 @@ private fun UnitSection(
 
         val lessons = unit.lessons
         val mission = unit.mission
-        // Sideways offset of every stop: the lessons, then the mission that closes the unit.
+        val flight = unit.flight
+        // Sideways offset of every stop: the lessons, the mission that closes the unit, then
+        // the rocket flight on to the next planet.
+        val lastLessonNumber = lessons.lastOrNull()?.number ?: 0
         val offsets = lessons.map { nodeOffset(it.number) } +
-            listOfNotNull(mission?.let { nodeOffset((lessons.lastOrNull()?.number ?: 0) + 1) })
+            listOfNotNull(
+                mission?.let { nodeOffset(lastLessonNumber + 1) },
+                flight?.let { nodeOffset(lastLessonNumber + 2) },
+            )
         val areaHeight = PathTopPadding + NodeStep * (offsets.size - 1).coerceAtLeast(0) +
             CurrentNodeSize + NodeDepth + PathBottomPadding
         val planetOnLeft = offsets.none { it < 0.dp }
@@ -380,8 +415,72 @@ private fun UnitSection(
                     onStart = { onStartMission(mission.id) },
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .offset(x = offsets.last(), y = PathTopPadding + NodeStep * lessons.size),
+                        .offset(x = offsets[lessons.size], y = PathTopPadding + NodeStep * lessons.size),
                 )
+            }
+            if (flight != null) {
+                val index = offsets.lastIndex
+                MissionNode(
+                    mission = flight,
+                    isCurrent = false,
+                    isPopoverOpen = flight.id == openLessonId,
+                    onClick = { onNodeClick(flight.id) },
+                    onDismissPopover = onDismissPopover,
+                    onStart = { onStartFlight(flight.id) },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(x = offsets[index], y = PathTopPadding + NodeStep * index),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The free-build planet at the end of the map: once Byte has move(), the learner can design a
+ * planet and program it with every block collected so far.
+ */
+@Composable
+private fun SandboxCard(collected: Int, total: Int, unlocked: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val space = CodeQuestTheme.colors.space
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(space.glass)
+            .border(2.dp, space.glassBorder, RoundedCornerShape(20.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Planet(style = PlanetStyle.forUnit(5), modifier = Modifier.size(52.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.home_sandbox_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = space.text,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(
+                    text = stringResource(R.string.home_sandbox_blocks, collected, total),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color(0xFFFFC94D),
+                )
+            }
+        }
+        Text(
+            text = stringResource(if (unlocked) R.string.home_sandbox_body else R.string.home_sandbox_locked),
+            style = MaterialTheme.typography.bodyMedium,
+            color = space.textSoft,
+        )
+        if (unlocked) {
+            ChunkyButton(
+                onClick = onOpen,
+                height = 48.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(HomeTestTags.SANDBOX),
+            ) {
+                Text(stringResource(R.string.home_sandbox_open))
             }
         }
     }
@@ -407,10 +506,17 @@ private fun MissionNode(
             else -> R.string.lesson_status_open
         },
     )
-    val kind = stringResource(if (mission.isBoss) R.string.home_boss_kind else R.string.home_mission_kind)
+    val kind = stringResource(
+        when {
+            mission.isFlight -> R.string.home_flight_kind
+            mission.isBoss -> R.string.home_boss_kind
+            else -> R.string.home_mission_kind
+        },
+    )
     val description = stringResource(R.string.home_mission_node_description, kind, mission.title, status)
     val colors = when {
         mission.isLocked -> ChunkyColors(face = space.lockFill, edge = space.lockEdge, content = space.lockInk)
+        mission.isFlight -> FlightNodeColors
         mission.isBoss -> extra.dangerButton
         else -> extra.xpButton
     }
@@ -436,6 +542,7 @@ private fun MissionNode(
                     imageVector = when {
                         mission.isLocked -> Icons.Filled.Lock
                         mission.isCompleted -> Icons.Filled.Check
+                        mission.isFlight -> CodeQuestIcons.Rocket
                         mission.isBoss -> CodeQuestIcons.Target
                         else -> CodeQuestIcons.Flag
                     },
@@ -480,7 +587,11 @@ private fun MissionPopover(mission: MissionNodeUi, kind: String, colors: ChunkyC
             Text(text = kind, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(text = mission.title, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = if (mission.isLocked) stringResource(R.string.home_mission_locked) else mission.goal,
+                text = when {
+                    !mission.isLocked -> mission.goal
+                    mission.isFlight -> stringResource(R.string.home_flight_locked)
+                    else -> stringResource(R.string.home_mission_locked)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -495,7 +606,13 @@ private fun MissionPopover(mission: MissionNodeUi, kind: String, colors: ChunkyC
                         .testTag(HomeTestTags.START),
                 ) {
                     Text(
-                        stringResource(if (mission.isCompleted) R.string.home_mission_again else R.string.home_mission_start),
+                        stringResource(
+                            when {
+                                mission.isFlight -> if (mission.isCompleted) R.string.home_flight_again else R.string.home_flight_start
+                                mission.isCompleted -> R.string.home_mission_again
+                                else -> R.string.home_mission_start
+                            },
+                        ),
                     )
                 }
             }

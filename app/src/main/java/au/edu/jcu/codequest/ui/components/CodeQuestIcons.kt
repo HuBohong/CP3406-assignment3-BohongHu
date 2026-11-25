@@ -74,6 +74,16 @@ object CodeQuestIcons {
         icon("Shield") { fill("M12 2.5l8 3v6c0 5-3.4 9.1-8 10.5C7.4 20.6 4 16.5 4 11.5v-6z") }
     }
 
+    /** Rocket flights between planets. */
+    val Rocket: ImageVector by lazy {
+        icon("Rocket") {
+            fill("M12 2c3 2.2 4.6 5.6 4.6 9.6v4.4H7.4v-4.4C7.4 7.6 9 4.2 12 2z")
+            fill("M7.4 12.5L4 16.5v3.5l3.4-2z")
+            fill("M16.6 12.5l3.4 4v3.5l-3.4-2z")
+            fill("M9.5 17.5h5L12 22z")
+        }
+    }
+
     /** Boss fights: a target. */
     val Target: ImageVector by lazy {
         icon("Target") {

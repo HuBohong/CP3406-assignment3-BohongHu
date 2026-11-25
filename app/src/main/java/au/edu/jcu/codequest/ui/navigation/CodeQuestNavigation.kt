@@ -32,6 +32,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import au.edu.jcu.codequest.domain.mission.BlockCollection
+import au.edu.jcu.codequest.domain.mission.Sandbox
+import au.edu.jcu.codequest.ui.flight.FlightRoute
 import au.edu.jcu.codequest.ui.home.HomeRoute
 import au.edu.jcu.codequest.ui.lesson.LessonRoute
 import au.edu.jcu.codequest.ui.mission.MissionRoute
@@ -142,7 +145,15 @@ private fun CodeQuestNavHost(
                 onOpenLesson = { lessonId -> navController.navigate(Routes.lesson(lessonId)) },
                 onOpenMission = { missionId -> navController.navigate(Routes.mission(missionId)) },
                 onOpenBonus = { navController.navigate(Routes.lesson(Routes.BONUS_ID)) },
+                onOpenFlight = { flightId -> navController.navigate(Routes.flight(flightId)) },
+                onOpenSandbox = { navController.navigate(Routes.mission(Sandbox.ID)) },
             )
+        }
+        composable(
+            route = Routes.FLIGHT,
+            arguments = listOf(navArgument(Routes.ARG_FLIGHT_ID) { type = NavType.StringType }),
+        ) {
+            FlightRoute(onExit = { navController.popBackStack() })
         }
         composable(
             route = Routes.MISSION,
@@ -182,6 +193,7 @@ private fun CodeQuestNavHost(
                 navArgument(Routes.ARG_XP) { type = NavType.IntType },
                 navArgument(Routes.ARG_FIRST_TRY) { type = NavType.IntType },
                 navArgument(Routes.ARG_TOTAL) { type = NavType.IntType },
+                navArgument(Routes.ARG_FIRST_TIME) { type = NavType.BoolType },
             ),
         ) { entry ->
             val arguments = entry.arguments
@@ -192,6 +204,11 @@ private fun CodeQuestNavHost(
                 firstTryCorrect = arguments?.getInt(Routes.ARG_FIRST_TRY) ?: 0,
                 total = arguments?.getInt(Routes.ARG_TOTAL) ?: 0,
                 isBonus = lessonId == Routes.BONUS_ID,
+                newBlockLabels = if (arguments?.getBoolean(Routes.ARG_FIRST_TIME) == true) {
+                    BlockCollection.rewardFor(lessonId).map { it.label }
+                } else {
+                    emptyList()
+                },
                 onDone = {
                     if (!navController.popBackStack(Routes.HOME, inclusive = false)) {
                         navController.navigate(Routes.HOME) {

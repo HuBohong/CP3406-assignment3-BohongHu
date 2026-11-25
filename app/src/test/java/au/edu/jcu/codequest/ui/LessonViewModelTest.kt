@@ -1,10 +1,10 @@
 package au.edu.jcu.codequest.ui
 
 import androidx.lifecycle.SavedStateHandle
+import au.edu.jcu.codequest.data.repository.BonusRound
 import au.edu.jcu.codequest.data.repository.LearnCardRepository
 import au.edu.jcu.codequest.domain.learn.LearnCard
 import au.edu.jcu.codequest.domain.learn.LearnCatalog
-import au.edu.jcu.codequest.data.repository.BonusRound
 import au.edu.jcu.codequest.domain.model.Difficulty
 import au.edu.jcu.codequest.domain.model.UserSettings
 import au.edu.jcu.codequest.testutil.FakeCurriculumRepository
@@ -148,6 +148,27 @@ class LessonViewModelTest {
         assertEquals(2, result?.firstTryCorrect)
         assertEquals(false, result?.isBonus)
         assertEquals(listOf(result), progress.recorded.map { it.result })
+    }
+
+    @Test
+    fun firstFinish_isMarkedSoTheResultCanHandOverBlocks() {
+        val viewModel = createViewModel()
+
+        viewModel.answerCurrent(correctly = true)
+        viewModel.answerCurrent(correctly = true)
+
+        assertEquals(true, viewModel.uiState.value.result?.firstCompletion)
+    }
+
+    @Test
+    fun finishingAgain_isNotAFirstCompletion() {
+        curriculum.lessons.value = listOf(testSummary("lesson", timesCompleted = 1), testSummary("ordering"))
+        val viewModel = createViewModel()
+
+        viewModel.answerCurrent(correctly = true)
+        viewModel.answerCurrent(correctly = true)
+
+        assertEquals(false, viewModel.uiState.value.result?.firstCompletion)
     }
 
     @Test
