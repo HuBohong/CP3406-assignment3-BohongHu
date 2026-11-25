@@ -248,10 +248,11 @@ fun BossArena(
             .clearAndSetSemantics { contentDescription = description },
     ) {
         // A wide arena (1.6 : 1) that gets shorter rather than overflowing on short screens.
-        val arenaHeight = minOf(maxWidth / 1.6f, maxBoardHeight)
+        val arenaWidth = maxWidth
+        val arenaHeight = minOf(arenaWidth / 1.6f, maxBoardHeight)
         val laneHeight = arenaHeight / state.level.lanes
-        Box(Modifier.size(maxWidth, arenaHeight)) {
-            Canvas(Modifier.size(maxWidth, arenaHeight)) {
+        Box(Modifier.size(arenaWidth, arenaHeight)) {
+            Canvas(Modifier.size(arenaWidth, arenaHeight)) {
                 drawArena(state, laneHeight.toPx())
             }
             val byteY by animateDpAsState(laneHeight * state.byteLane, label = "byteLane")
