@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.displayCutoutPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -89,6 +93,12 @@ private val AsteroidColor = Color(0xFF8C86A8)
 private val AsteroidShade = Color(0xFF5E5878)
 private val WormholeColors = listOf(Color(0xFF3A1078), Color(0xFF7B2CBF), Color(0xFF240046), Color(0xFFC77DFF))
 
+/** Width to height of the sky scene, matching its portrait proportions. */
+private const val SKY_ASPECT_RATIO = 1.2f
+
+/** Widest the two-pane landscape layout grows on large screens. */
+private val LandscapeMaxWidth = 1100.dp
+
 @Composable
 fun FlightRoute(onExit: () -> Unit, viewModel: FlightViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -131,17 +141,66 @@ fun FlightScreen(
             )
             return@Box
         }
-        val skyHeight = (LocalConfiguration.current.screenHeightDp.dp * 0.38f).coerceIn(180.dp, 320.dp)
+        val configuration = LocalConfiguration.current
+        // In landscape the sky sits beside the launch code instead of above it.
+        val landscape = configuration.screenWidthDp > configuration.screenHeightDp
+        val skyHeight = (configuration.screenHeightDp.dp * 0.38f).coerceIn(180.dp, 320.dp)
+        val sky: @Composable (Modifier) -> Unit = { skyModifier ->
+            FlightSky(
+                level = level,
+                aimAngle = uiState.angle,
+                flight = uiState.flight,
+                shownPoints = uiState.shownPoints,
+                previous = uiState.previous,
+                modifier = skyModifier,
+            )
+        }
+        val launchControls: @Composable () -> Unit = {
+            Text(text = level.goal, style = MaterialTheme.typography.bodyMedium, color = space.textSoft)
+            LaunchCode(
+                angle = uiState.angle,
+                power = uiState.power,
+                enabled = uiState.canChangeValues,
+                onChangeAngle = onChangeAngle,
+                onChangePower = onChangePower,
+            )
+            if (uiState.launches > 0) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(space.glass)
+                        .padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ByteMascot(Modifier.size(32.dp))
+                    Text(text = level.hint, style = MaterialTheme.typography.bodyMedium, color = space.text)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+        val launchButton: @Composable (Modifier) -> Unit = { buttonModifier ->
+            ChunkyButton(
+                onClick = onLaunch,
+                enabled = uiState.canChangeValues,
+                colors = CodeQuestTheme.colors.successButton,
+                modifier = buttonModifier.testTag(FlightTestTags.LAUNCH),
+            ) {
+                Text(stringResource(if (uiState.isFlying) R.string.flight_flying else R.string.flight_launch))
+            }
+        }
+        val paneWidth = if (landscape) Modifier.widthIn(max = LandscapeMaxWidth).fillMaxWidth() else Modifier.contentWidth()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .displayCutoutPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
-                modifier = Modifier
-                    .contentWidth()
+                modifier = paneWidth
                     .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -157,58 +216,56 @@ fun FlightScreen(
                     Text(text = level.title, style = MaterialTheme.typography.titleLarge, color = Color.White)
                 }
             }
-            Column(
-                modifier = Modifier
-                    .contentWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                FlightSky(
-                    level = level,
-                    aimAngle = uiState.angle,
-                    flight = uiState.flight,
-                    shownPoints = uiState.shownPoints,
-                    previous = uiState.previous,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(skyHeight),
-                )
-                Text(text = level.goal, style = MaterialTheme.typography.bodyMedium, color = space.textSoft)
-                LaunchCode(
-                    angle = uiState.angle,
-                    power = uiState.power,
-                    enabled = uiState.canChangeValues,
-                    onChangeAngle = onChangeAngle,
-                    onChangePower = onChangePower,
-                )
-                if (uiState.launches > 0) {
-                    Row(
+            if (landscape) {
+                Row(
+                    modifier = paneWidth
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(space.glass)
-                            .padding(10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(bottom = 10.dp),
+                        contentAlignment = Alignment.TopCenter,
                     ) {
-                        ByteMascot(Modifier.size(32.dp))
-                        Text(text = level.hint, style = MaterialTheme.typography.bodyMedium, color = space.text)
+                        // Same proportions as in portrait, so the scene is never cropped.
+                        sky(Modifier.fillMaxHeight().aspectRatio(SKY_ASPECT_RATIO, matchHeightConstraintsFirst = true))
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            launchControls()
+                        }
+                        launchButton(Modifier.fillMaxWidth().padding(bottom = 10.dp))
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-            }
-            ChunkyButton(
-                onClick = onLaunch,
-                enabled = uiState.canChangeValues,
-                colors = CodeQuestTheme.colors.successButton,
-                modifier = Modifier
-                    .contentWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .testTag(FlightTestTags.LAUNCH),
-            ) {
-                Text(stringResource(if (uiState.isFlying) R.string.flight_flying else R.string.flight_launch))
+            } else {
+                Column(
+                    modifier = Modifier
+                        .contentWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    sky(Modifier.fillMaxWidth().height(skyHeight))
+                    launchControls()
+                }
+                launchButton(
+                    Modifier
+                        .contentWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                )
             }
         }
         AnimatedVisibility(
@@ -434,8 +491,9 @@ private fun FlightResultPanel(outcome: FlightOutcome, nextPlanet: Int, onBackToM
     Surface(
         color = background,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        // A centred sheet on wide screens and in landscape instead of a full-width strip.
         modifier = Modifier
-            .fillMaxWidth()
+            .contentWidth()
             .testTag(FlightTestTags.RESULT),
     ) {
         Column(

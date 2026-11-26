@@ -3,15 +3,20 @@ package au.edu.jcu.codequest.ui.navigation
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.union
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailDefaults
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
@@ -66,7 +71,12 @@ fun CodeQuestNavigation(startDestination: Destination) {
         if (maxWidth >= RAIL_MIN_WIDTH) {
             Row(Modifier.fillMaxSize()) {
                 if (showTopLevelNavigation) {
-                    NavigationRail(containerColor = barColors.container) {
+                    NavigationRail(
+                        containerColor = barColors.container,
+                        // Keeps the labels clear of a camera cutout on the rail's side in landscape.
+                        windowInsets = NavigationRailDefaults.windowInsets
+                            .union(WindowInsets.displayCutout.only(WindowInsetsSides.Start)),
+                    ) {
                         TopLevelDestination.entries.forEach { destination ->
                             NavigationRailItem(
                                 selected = currentDestination.isOn(destination),

@@ -9,12 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -171,6 +174,9 @@ fun MissionRoute(
 }
 
 /** Free-build planet only: switching mode, choosing a tool and painting squares. */
+/** Widest the two-pane landscape layout grows on large screens. */
+private val LandscapeMaxWidth = 1100.dp
+
 private data class BuildActions(
     val toggle: () -> Unit,
     val selectTool: (BuildTool) -> Unit,
@@ -208,13 +214,58 @@ private fun MissionScreen(
             )
             return@Box
         }
-        // The board takes at most about a third of the screen, leaving room for the program.
-        val boardMax = (LocalConfiguration.current.screenHeightDp.dp * 0.36f).coerceIn(150.dp, 300.dp)
+        val configuration = LocalConfiguration.current
+        // In landscape the board sits beside the program instead of above it.
+        val landscape = configuration.screenWidthDp > configuration.screenHeightDp
+        // Portrait: the board takes about a third of the height, leaving room for the program.
+        val boardMax = if (landscape) {
+            (configuration.screenHeightDp.dp * 0.6f).coerceIn(150.dp, 360.dp)
+        } else {
+            (configuration.screenHeightDp.dp * 0.36f).coerceIn(150.dp, 300.dp)
+        }
+        val boardAndGoal: @Composable () -> Unit = {
+            when (val board = uiState.boardState) {
+                is GridState -> GridBoard(
+                    board,
+                    description = gridDescription(board),
+                    maxBoardHeight = boardMax,
+                    onCellTap = if (uiState.buildMode && uiState.isEditable) buildActions.paint else null,
+                    cellLabels = if (uiState.buildMode) sandboxCellLabels(board) else null,
+                    cellActionLabel = stringResource(R.string.sandbox_paint_cell),
+                )
+                is BossState -> BossArena(
+                    board,
+                    description = bossDescription(board),
+                    maxBoardHeight = minOf(boardMax, 260.dp),
+                )
+                null -> Unit
+            }
+            GoalLine(mission = mission, showHint = uiState.showHint, onToggleHint = onToggleHint)
+        }
+        val programAndTools: @Composable ColumnScope.() -> Unit = {
+            ProgramCard(
+                uiState = uiState,
+                actions = editorActions,
+                onClear = onClear,
+                modifier = Modifier.weight(1f),
+            )
+            if (uiState.buildMode) {
+                BuildToolbar(selected = uiState.buildTool, onSelect = buildActions.selectTool)
+            } else {
+                Toolbox(
+                    mission = mission,
+                    enabled = uiState.isEditable,
+                    isCollected = uiState::isCollected,
+                    onAddBlock = onAddBlock,
+                )
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .displayCutoutPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             MissionTopBar(
@@ -224,57 +275,66 @@ private fun MissionScreen(
                 buildMode = if (uiState.isSandbox) uiState.buildMode else null,
                 buildEnabled = uiState.isEditable,
                 onToggleBuild = buildActions.toggle,
+                modifier = if (landscape) Modifier.widthIn(max = LandscapeMaxWidth).fillMaxWidth() else Modifier.contentWidth(),
             )
-            Column(
-                modifier = Modifier
-                    .contentWidth()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                when (val board = uiState.boardState) {
-                    is GridState -> GridBoard(
-                        board,
-                        description = gridDescription(board),
-                        maxBoardHeight = boardMax,
-                        onCellTap = if (uiState.buildMode && uiState.isEditable) buildActions.paint else null,
-                        cellLabels = if (uiState.buildMode) sandboxCellLabels(board) else null,
-                        cellActionLabel = stringResource(R.string.sandbox_paint_cell),
-                    )
-                    is BossState -> BossArena(
-                        board,
-                        description = bossDescription(board),
-                        maxBoardHeight = minOf(boardMax, 260.dp),
-                    )
-                    null -> Unit
+            if (landscape) {
+                Row(
+                    modifier = Modifier
+                        .widthIn(max = LandscapeMaxWidth)
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        boardAndGoal()
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        programAndTools()
+                        Controls(
+                            uiState = uiState,
+                            onRun = onRun,
+                            onStep = onStep,
+                            onBackToEditing = onBackToEditing,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                        )
+                    }
                 }
-                GoalLine(mission = mission, showHint = uiState.showHint, onToggleHint = onToggleHint)
-                ProgramCard(
+            } else {
+                Column(
+                    modifier = Modifier
+                        .contentWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    boardAndGoal()
+                    programAndTools()
+                }
+                Controls(
                     uiState = uiState,
-                    actions = editorActions,
-                    onClear = onClear,
-                    modifier = Modifier.weight(1f),
+                    onRun = onRun,
+                    onStep = onStep,
+                    onBackToEditing = onBackToEditing,
+                    modifier = Modifier
+                        .contentWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 )
-                if (uiState.buildMode) {
-                    BuildToolbar(selected = uiState.buildTool, onSelect = buildActions.selectTool)
-                } else {
-                    Toolbox(
-                        mission = mission,
-                        enabled = uiState.isEditable,
-                        isCollected = uiState::isCollected,
-                        onAddBlock = onAddBlock,
-                    )
-                }
             }
-            Controls(
-                uiState = uiState,
-                onRun = onRun,
-                onStep = onStep,
-                onBackToEditing = onBackToEditing,
-                modifier = Modifier
-                    .contentWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-            )
         }
         AnimatedVisibility(
             visible = uiState.outcome != null,
@@ -308,11 +368,11 @@ private fun MissionTopBar(
     buildMode: Boolean? = null,
     buildEnabled: Boolean = true,
     onToggleBuild: () -> Unit = {},
+    modifier: Modifier = Modifier.contentWidth(),
 ) {
     val space = CodeQuestTheme.colors.space
     Row(
-        modifier = Modifier
-            .contentWidth()
+        modifier = modifier
             .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -904,8 +964,9 @@ private fun ResultPanel(
     Surface(
         color = background,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        // A centred sheet on wide screens and in landscape instead of a full-width strip.
         modifier = Modifier
-            .fillMaxWidth()
+            .contentWidth()
             .testTag(MissionTestTags.RESULT),
     ) {
         Column(

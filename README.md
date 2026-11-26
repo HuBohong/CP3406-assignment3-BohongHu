@@ -102,7 +102,10 @@ domain (pure Kotlin: models, QuizSession, Scoring, Progression) - used by every 
   (`lessonId`, `missionId`, `flightId`); `DestinationTest` checks the names stay in step.
 - Three top-level tabs (Learn, Progress, Settings) with saved and restored tab state; the
   selected tab is found with `NavDestination.hasRoute(...)` on the destination hierarchy.
-- **Adaptive**: a bottom navigation bar on phones and a navigation rail from 600 dp width.
+- **Adaptive**: a bottom navigation bar on phones and a navigation rail from 600 dp width
+  (kept clear of the camera cutout). In landscape the mission and rocket-flight screens switch
+  to two panes, with the board or sky on the left and the program or launch code on the right,
+  and result sheets stay centred instead of stretching across the screen.
 - Back stack control: onboarding is removed once finished, and a finished lesson is replaced
   by its result so Back never reopens a completed quiz.
 - A type-safe deep link (`navDeepLink<Destination.Lesson>`), `codequest://lesson/{lessonId}`,
