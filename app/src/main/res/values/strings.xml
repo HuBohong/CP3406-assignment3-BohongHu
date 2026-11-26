@@ -20,6 +20,15 @@
     <string name="story_body">Byte\'s ship has crash-landed at the edge of the Kotlin galaxy. Every system on board runs on code, and every lesson you finish repairs one of them.</string>
     <string name="story_goal">Fix the ship, fly from planet to planet, and then use what you have learned to build worlds of your own.</string>
     <string name="story_next">Help Byte</string>
+    <string name="story_log_title">Ship\'s log</string>
+    <string name="story_beat_basics_1">Fuel tank sealed. Byte can store values again, so the engines finally have something to burn.</string>
+    <string name="story_beat_basics_2">The radio crackles to life. First message home: \"Hi, still in one piece!\"</string>
+    <string name="story_beat_flow_1">Shields can make decisions now. If an asteroid comes close, they go up on their own.</string>
+    <string name="story_beat_flow_2">Launch sequence repaired. Byte counts down, and the thrusters fire on zero.</string>
+    <string name="story_beat_fun_1">Boosters wrapped in functions. Byte writes a boost once and calls it whenever it likes.</string>
+    <string name="story_beat_fun_2">Autopilot online. Byte hands it little lambdas that say what to do at each planet.</string>
+    <string name="story_beat_data_1">Star charts restored. Every planet and its distance is back in one tidy list.</string>
+    <string name="story_beat_data_2">Sensors no longer crash on empty space. All systems online: Byte can fly anywhere. Try building your own planet!</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title">Before we launch</string>

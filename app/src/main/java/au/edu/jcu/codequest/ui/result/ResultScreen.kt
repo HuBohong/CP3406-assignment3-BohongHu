@@ -1,6 +1,7 @@
 package au.edu.jcu.codequest.ui.result
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -73,6 +74,8 @@ fun ResultScreen(
     onPractiseAgain: () -> Unit,
     /** Code blocks this lesson hands over, shown only the first time it is finished. */
     newBlockLabels: List<String> = emptyList(),
+    /** Byte's ship's-log line for the system this lesson repaired, shown the first time only. */
+    storyBeat: String? = null,
 ) {
     BackHandler(onBack = onDone)
     LightSystemBarIcons()
@@ -125,8 +128,11 @@ fun ResultScreen(
                         modifier = Modifier.weight(1f),
                     )
                 }
+                if (storyBeat != null) {
+                    StoryBeatCard(text = storyBeat, modifier = Modifier.contentWidth().padding(top = 16.dp))
+                }
                 if (newBlockLabels.isNotEmpty()) {
-                    NewBlocksCard(labels = newBlockLabels, modifier = Modifier.contentWidth().padding(top = 16.dp))
+                    NewBlocksCard(labels = newBlockLabels, modifier = Modifier.contentWidth().padding(top = 12.dp))
                 }
                 Text(
                     text = stringResource(R.string.result_no_pressure),
@@ -165,6 +171,49 @@ fun ResultScreen(
                     Text(stringResource(R.string.result_again))
                 }
             }
+        }
+    }
+}
+
+/**
+ * The story moment for each lesson: which ship system it repaired. Lessons follow the ship from
+ * crash site to take-off, so finishing them in order tells Byte's story.
+ */
+@StringRes
+fun storyBeatFor(lessonId: String): Int? = when (lessonId) {
+    "basics-1" -> R.string.story_beat_basics_1
+    "basics-2" -> R.string.story_beat_basics_2
+    "flow-1" -> R.string.story_beat_flow_1
+    "flow-2" -> R.string.story_beat_flow_2
+    "fun-1" -> R.string.story_beat_fun_1
+    "fun-2" -> R.string.story_beat_fun_2
+    "data-1" -> R.string.story_beat_data_1
+    "data-2" -> R.string.story_beat_data_2
+    else -> null
+}
+
+/** Byte's ship's log: one line of story after a first finish. */
+@Composable
+private fun StoryBeatCard(text: String, modifier: Modifier = Modifier) {
+    val space = CodeQuestTheme.colors.space
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(space.glass)
+            .border(2.dp, space.glassBorder, RoundedCornerShape(20.dp))
+            .padding(14.dp)
+            .semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        ByteMascot(Modifier.size(40.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = stringResource(R.string.story_log_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = space.textSoft,
+            )
+            Text(text = text, style = MaterialTheme.typography.bodyMedium, color = space.text)
         }
     }
 }

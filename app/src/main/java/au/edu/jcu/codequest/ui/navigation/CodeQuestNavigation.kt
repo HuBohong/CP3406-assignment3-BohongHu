@@ -40,6 +40,7 @@ import au.edu.jcu.codequest.ui.lesson.LessonRoute
 import au.edu.jcu.codequest.ui.mission.MissionRoute
 import au.edu.jcu.codequest.ui.onboarding.OnboardingRoute
 import au.edu.jcu.codequest.ui.result.ResultScreen
+import au.edu.jcu.codequest.ui.result.storyBeatFor
 import au.edu.jcu.codequest.ui.settings.SettingsRoute
 import au.edu.jcu.codequest.ui.stats.StatsRoute
 import au.edu.jcu.codequest.ui.theme.CodeQuestTheme
@@ -198,17 +199,16 @@ private fun CodeQuestNavHost(
         ) { entry ->
             val arguments = entry.arguments
             val lessonId = arguments?.getString(Routes.ARG_LESSON_ID).orEmpty()
+            val firstTime = arguments?.getBoolean(Routes.ARG_FIRST_TIME) == true
+            val storyBeat = storyBeatFor(lessonId)?.takeIf { firstTime }
             ResultScreen(
                 stars = arguments?.getInt(Routes.ARG_STARS) ?: 0,
                 xp = arguments?.getInt(Routes.ARG_XP) ?: 0,
                 firstTryCorrect = arguments?.getInt(Routes.ARG_FIRST_TRY) ?: 0,
                 total = arguments?.getInt(Routes.ARG_TOTAL) ?: 0,
                 isBonus = lessonId == Routes.BONUS_ID,
-                newBlockLabels = if (arguments?.getBoolean(Routes.ARG_FIRST_TIME) == true) {
-                    BlockCollection.rewardFor(lessonId).map { it.label }
-                } else {
-                    emptyList()
-                },
+                newBlockLabels = if (firstTime) BlockCollection.rewardFor(lessonId).map { it.label } else emptyList(),
+                storyBeat = if (storyBeat != null) stringResource(storyBeat) else null,
                 onDone = {
                     if (!navController.popBackStack(Routes.HOME, inclusive = false)) {
                         navController.navigate(Routes.HOME) {
