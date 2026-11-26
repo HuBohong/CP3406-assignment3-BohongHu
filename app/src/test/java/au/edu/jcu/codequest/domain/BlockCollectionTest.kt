@@ -46,12 +46,6 @@ class BlockCollectionTest {
     }
 
     @Test
-    fun lessonFor_findsWhereABlockComesFrom() {
-        assertEquals("flow-2", BlockCollection.lessonFor(PaletteBlock.Repeat))
-        assertEquals("basics-1", BlockCollection.lessonFor(PaletteBlock.Act(Action.MOVE)))
-    }
-
-    @Test
     fun sandbox_offersOnlyBlocksThatWorkOnAGrid() {
         assertTrue(Sandbox.gridBlocks.none { it == PaletteBlock.Act(Action.MOVE_UP) || it == PaletteBlock.Act(Action.STAY) })
         assertEquals(8, Sandbox.gridBlocks.size)

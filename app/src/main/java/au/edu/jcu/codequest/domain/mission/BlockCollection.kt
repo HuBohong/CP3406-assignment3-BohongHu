@@ -23,9 +23,6 @@ object BlockCollection {
 
     fun rewardFor(lessonId: String): List<PaletteBlock> = rewards[lessonId].orEmpty()
 
-    /** The lesson that hands over [block], or null if no lesson does. */
-    fun lessonFor(block: PaletteBlock): String? = rewards.entries.firstOrNull { block in it.value }?.key
-
     fun collected(completedLessonIds: Set<String>): Set<PaletteBlock> =
         rewards.filterKeys { it in completedLessonIds }.values.flatten().toSet()
 }

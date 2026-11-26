@@ -133,7 +133,6 @@ class HomeViewModelTest {
         assertEquals(3, state.totalLessons)
         assertEquals(70, state.totalXp)
         assertEquals("b", state.nextLesson?.id)
-        assertEquals(1f / 3f, state.pathProgress, 0.001f)
     }
 
     @Test

@@ -68,10 +68,7 @@ data class HomeUiState(
     val blocksTotal: Int = BlockCollection.all.size,
     /** The free-build planet opens once Byte has move() to work with. */
     val sandboxUnlocked: Boolean = false,
-) {
-    val pathProgress: Float
-        get() = if (totalLessons == 0) 0f else completedLessons.toFloat() / totalLessons
-}
+)
 
 /** Builds the learning path for the landing page from lessons, missions, progress and settings. */
 @HiltViewModel
