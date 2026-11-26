@@ -2,9 +2,14 @@ package au.edu.jcu.codequest.ui.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import au.edu.jcu.codequest.data.repository.BlockCollectionRepository
 import au.edu.jcu.codequest.data.repository.CurriculumRepository
+import au.edu.jcu.codequest.data.repository.MissionRepository
 import au.edu.jcu.codequest.data.repository.ProgressRepository
 import au.edu.jcu.codequest.data.repository.SettingsRepository
+import au.edu.jcu.codequest.domain.flight.FlightCatalog
+import au.edu.jcu.codequest.domain.mission.BlockCollection
+import au.edu.jcu.codequest.domain.mission.MissionCatalog
 import au.edu.jcu.codequest.domain.model.RecentSession
 import au.edu.jcu.codequest.domain.model.TopicAccuracy
 import au.edu.jcu.codequest.domain.quiz.Scoring
@@ -27,6 +32,13 @@ data class StatsUiState(
     val detailedHistory: Boolean = false,
     val topicAccuracy: List<TopicAccuracy> = emptyList(),
     val recentSessions: List<RecentSession> = emptyList(),
+    /** The adventure beyond the lessons: planet missions, rocket flights and code blocks. */
+    val missionsCompleted: Int = 0,
+    val missionsTotal: Int = MissionCatalog.all.size,
+    val flightsCompleted: Int = 0,
+    val flightsTotal: Int = FlightCatalog.all.size,
+    val blocksCollected: Int = 0,
+    val blocksTotal: Int = BlockCollection.all.size,
 )
 
 /** Collects the learner's statistics from Room into one state object for the screen. */
@@ -35,9 +47,11 @@ class StatsViewModel @Inject constructor(
     curriculumRepository: CurriculumRepository,
     progressRepository: ProgressRepository,
     settingsRepository: SettingsRepository,
+    missionRepository: MissionRepository,
+    blockCollectionRepository: BlockCollectionRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<StatsUiState> = combine(
+    private val learningStats = combine(
         curriculumRepository.observeLessons(),
         progressRepository.observeOverview(),
         progressRepository.observeTopicAccuracy(),
@@ -55,6 +69,18 @@ class StatsViewModel @Inject constructor(
             detailedHistory = settings.detailedHistory,
             topicAccuracy = topics,
             recentSessions = recent,
+        )
+    }
+
+    val uiState: StateFlow<StatsUiState> = combine(
+        learningStats,
+        missionRepository.observeCompletedMissionIds(),
+        blockCollectionRepository.observeCollected(),
+    ) { stats, completedIds, blocks ->
+        stats.copy(
+            missionsCompleted = MissionCatalog.all.count { it.id in completedIds },
+            flightsCompleted = FlightCatalog.all.count { it.id in completedIds },
+            blocksCollected = blocks.size,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), StatsUiState())
 

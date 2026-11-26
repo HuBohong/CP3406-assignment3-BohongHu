@@ -23,15 +23,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import androidx.navigation.toRoute
 import au.edu.jcu.codequest.domain.mission.BlockCollection
 import au.edu.jcu.codequest.domain.mission.Sandbox
 import au.edu.jcu.codequest.ui.flight.FlightRoute
@@ -53,7 +53,7 @@ private val RAIL_MIN_WIDTH = 600.dp
  * The bar or rail is only shown on the three top-level tabs, so a lesson gets the full screen.
  */
 @Composable
-fun CodeQuestNavigation(startDestination: String) {
+fun CodeQuestNavigation(startDestination: Destination) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -127,101 +127,84 @@ fun CodeQuestNavigation(startDestination: String) {
 @Composable
 private fun CodeQuestNavHost(
     navController: NavHostController,
-    startDestination: String,
+    startDestination: Destination,
     modifier: Modifier = Modifier,
 ) {
     NavHost(navController = navController, startDestination = startDestination, modifier = modifier) {
-        composable(Routes.ONBOARDING) {
+        composable<Destination.Onboarding> {
             OnboardingRoute(
                 onFinished = {
                     // Onboarding is removed from the back stack: Back from Home leaves the app.
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    navController.navigate(Destination.Home) {
+                        popUpTo<Destination.Onboarding> { inclusive = true }
                     }
                 },
             )
         }
-        composable(Routes.HOME) {
+        composable<Destination.Home> {
             HomeRoute(
-                onOpenLesson = { lessonId -> navController.navigate(Routes.lesson(lessonId)) },
-                onOpenMission = { missionId -> navController.navigate(Routes.mission(missionId)) },
-                onOpenBonus = { navController.navigate(Routes.lesson(Routes.BONUS_ID)) },
-                onOpenFlight = { flightId -> navController.navigate(Routes.flight(flightId)) },
-                onOpenSandbox = { navController.navigate(Routes.mission(Sandbox.ID)) },
+                onOpenLesson = { lessonId -> navController.navigate(Destination.Lesson(lessonId)) },
+                onOpenMission = { missionId -> navController.navigate(Destination.Mission(missionId)) },
+                onOpenBonus = { navController.navigate(Destination.Lesson(Routes.BONUS_ID)) },
+                onOpenFlight = { flightId -> navController.navigate(Destination.Flight(flightId)) },
+                onOpenSandbox = { navController.navigate(Destination.Mission(Sandbox.ID)) },
             )
         }
-        composable(
-            route = Routes.FLIGHT,
-            arguments = listOf(navArgument(Routes.ARG_FLIGHT_ID) { type = NavType.StringType }),
-        ) {
+        composable<Destination.Flight> {
             FlightRoute(onExit = { navController.popBackStack() })
         }
-        composable(
-            route = Routes.MISSION,
-            arguments = listOf(navArgument(Routes.ARG_MISSION_ID) { type = NavType.StringType }),
-        ) {
+        composable<Destination.Mission> {
             MissionRoute(onExit = { navController.popBackStack() })
         }
-        composable(Routes.STATS) { StatsRoute() }
-        composable(Routes.SETTINGS) { SettingsRoute() }
-        composable(
-            route = Routes.LESSON,
-            arguments = listOf(navArgument(Routes.ARG_LESSON_ID) { type = NavType.StringType }),
-            deepLinks = listOf(navDeepLink { uriPattern = Routes.LESSON_DEEP_LINK }),
+        composable<Destination.Stats> { StatsRoute() }
+        composable<Destination.Settings> { SettingsRoute() }
+        composable<Destination.Lesson>(
+            deepLinks = listOf(navDeepLink<Destination.Lesson>(basePath = Routes.LESSON_DEEP_LINK_BASE)),
         ) {
             LessonRoute(
-                onExit = {
-                    // A lesson opened from a deep link has no Home underneath it yet.
-                    if (!navController.popBackStack(Routes.HOME, inclusive = false)) {
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.LESSON) { inclusive = true }
-                        }
-                    }
-                },
+                onExit = { navController.backToHome<Destination.Lesson>() },
                 onFinished = { result ->
                     // Replace the lesson with its result so Back does not reopen a finished quiz.
-                    navController.navigate(Routes.result(result)) {
-                        popUpTo(Routes.LESSON) { inclusive = true }
+                    navController.navigate(Destination.Result.from(result)) {
+                        popUpTo<Destination.Lesson> { inclusive = true }
                     }
                 },
             )
         }
-        composable(
-            route = Routes.RESULT,
-            arguments = listOf(
-                navArgument(Routes.ARG_LESSON_ID) { type = NavType.StringType },
-                navArgument(Routes.ARG_STARS) { type = NavType.IntType },
-                navArgument(Routes.ARG_XP) { type = NavType.IntType },
-                navArgument(Routes.ARG_FIRST_TRY) { type = NavType.IntType },
-                navArgument(Routes.ARG_TOTAL) { type = NavType.IntType },
-                navArgument(Routes.ARG_FIRST_TIME) { type = NavType.BoolType },
-            ),
-        ) { entry ->
-            val arguments = entry.arguments
-            val lessonId = arguments?.getString(Routes.ARG_LESSON_ID).orEmpty()
-            val firstTime = arguments?.getBoolean(Routes.ARG_FIRST_TIME) == true
-            val storyBeat = storyBeatFor(lessonId)?.takeIf { firstTime }
+        composable<Destination.Result> { entry ->
+            val result = entry.toRoute<Destination.Result>()
+            val storyBeat = storyBeatFor(result.lessonId)?.takeIf { result.firstTime }
             ResultScreen(
-                stars = arguments?.getInt(Routes.ARG_STARS) ?: 0,
-                xp = arguments?.getInt(Routes.ARG_XP) ?: 0,
-                firstTryCorrect = arguments?.getInt(Routes.ARG_FIRST_TRY) ?: 0,
-                total = arguments?.getInt(Routes.ARG_TOTAL) ?: 0,
-                isBonus = lessonId == Routes.BONUS_ID,
-                newBlockLabels = if (firstTime) BlockCollection.rewardFor(lessonId).map { it.label } else emptyList(),
-                storyBeat = if (storyBeat != null) stringResource(storyBeat) else null,
-                onDone = {
-                    if (!navController.popBackStack(Routes.HOME, inclusive = false)) {
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.RESULT) { inclusive = true }
-                        }
-                    }
+                stars = result.stars,
+                xp = result.xp,
+                firstTryCorrect = result.firstTry,
+                total = result.total,
+                isBonus = result.lessonId == Routes.BONUS_ID,
+                newBlockLabels = if (result.firstTime) {
+                    BlockCollection.rewardFor(result.lessonId).map { it.label }
+                } else {
+                    emptyList()
                 },
+                storyBeat = if (storyBeat != null) stringResource(storyBeat) else null,
+                onDone = { navController.backToHome<Destination.Result>() },
                 onPractiseAgain = {
-                    navController.navigate(Routes.lesson(lessonId)) {
-                        popUpTo(Routes.RESULT) { inclusive = true }
+                    navController.navigate(Destination.Lesson(result.lessonId)) {
+                        popUpTo<Destination.Result> { inclusive = true }
                     }
                 },
             )
+        }
+    }
+}
+
+/**
+ * Returns to the map. A lesson opened from a deep link has no Home underneath it yet, so in that
+ * case Home is opened and the screen being left is removed from the back stack.
+ */
+private inline fun <reified Leaving : Destination> NavHostController.backToHome() {
+    if (!popBackStack<Destination.Home>(inclusive = false)) {
+        navigate(Destination.Home) {
+            popUpTo<Leaving> { inclusive = true }
         }
     }
 }
@@ -258,15 +241,15 @@ private fun topLevelBarColors(onSpace: Boolean): TopLevelBarColors {
 }
 
 private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
-    this?.hierarchy?.any { it.route == destination.route } == true
+    this?.hierarchy?.any { it.hasRoute(destination.destination::class) } == true
 
 /**
  * Switches tab the way Material guidance recommends: one copy of each tab on the back stack,
  * and each tab's state (such as scroll position) is saved and restored.
  */
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {
-    navigate(destination.route) {
-        popUpTo(Routes.HOME) { saveState = true }
+    navigate(destination.destination) {
+        popUpTo<Destination.Home> { saveState = true }
         launchSingleTop = true
         restoreState = true
     }

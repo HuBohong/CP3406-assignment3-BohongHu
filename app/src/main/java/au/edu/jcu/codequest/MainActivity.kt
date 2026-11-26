@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import au.edu.jcu.codequest.domain.model.ThemeMode
 import au.edu.jcu.codequest.ui.navigation.CodeQuestNavigation
-import au.edu.jcu.codequest.ui.navigation.Routes
+import au.edu.jcu.codequest.ui.navigation.Destination
 import au.edu.jcu.codequest.ui.theme.CodeQuestTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -56,10 +56,10 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                 } else {
                     // Decided once: finishing onboarding navigates instead of rebuilding the graph.
-                    val startDestination = rememberSaveable {
-                        if (uiState.onboardingDone) Routes.HOME else Routes.ONBOARDING
-                    }
-                    CodeQuestNavigation(startDestination = startDestination)
+                    val startAtHome = rememberSaveable { uiState.onboardingDone }
+                    CodeQuestNavigation(
+                        startDestination = if (startAtHome) Destination.Home else Destination.Onboarding,
+                    )
                 }
             }
         }

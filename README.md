@@ -90,17 +90,23 @@ domain (pure Kotlin: models, QuizSession, Scoring, Progression) - used by every 
 
 ### Navigation
 
-`ui/navigation/CodeQuestNavigation.kt` uses Navigation Compose with a single `NavHost`.
+`ui/navigation/CodeQuestNavigation.kt` uses Navigation Compose with a single `NavHost` and
+**type-safe routes** (Navigation 2.8).
 
-- Three top-level tabs (Learn, Progress, Settings) with saved and restored tab state.
+- Every screen is a `@Serializable` class or object in the sealed `Destination` interface
+  (`ui/navigation/Routes.kt`). Arguments are constructor properties, so a missing or wrongly
+  typed argument is a compile error: `navigate(Destination.Lesson(lessonId))`,
+  `navigate(Destination.Result.from(sessionResult))`, and the result screen reads its
+  arguments back with `entry.toRoute<Destination.Result>()`.
+- ViewModels read their argument from `SavedStateHandle` under the property name
+  (`lessonId`, `missionId`, `flightId`); `DestinationTest` checks the names stay in step.
+- Three top-level tabs (Learn, Progress, Settings) with saved and restored tab state; the
+  selected tab is found with `NavDestination.hasRoute(...)` on the destination hierarchy.
 - **Adaptive**: a bottom navigation bar on phones and a navigation rail from 600 dp width.
-- `lesson/{lessonId}` takes a string argument that `LessonViewModel` reads from
-  `SavedStateHandle`. `mission/{missionId}` and `flight/{flightId}` work the same way.
-  `result/...` takes typed integer arguments and a boolean that says whether new code blocks
-  were collected.
 - Back stack control: onboarding is removed once finished, and a finished lesson is replaced
   by its result so Back never reopens a completed quiz.
-- A deep link, `codequest://lesson/{lessonId}`, opens a lesson directly. Try it with
+- A type-safe deep link (`navDeepLink<Destination.Lesson>`), `codequest://lesson/{lessonId}`,
+  opens a lesson directly. Try it with
   `adb shell am start -a android.intent.action.VIEW -d "codequest://lesson/basics-1"`.
 - Leaving a lesson half-way asks for confirmation through `BackHandler`.
 
@@ -181,10 +187,11 @@ Local JVM tests (`app/src/test`), run with `./gradlew test`:
 | `MissionViewModelTest` | Tap-to-build editing, replay, stepping, saving the result, locked blocks and the free-build planet |
 | `BlockCollectionTest` | Every mission can be built from blocks collected in the lessons before it |
 | `SandboxMapTest` | Designing the free-build planet: one start and one beacon, saving and loading |
+| `DestinationTest` | Navigation arguments: route property names match the `SavedStateHandle` keys, and a session result maps onto the result route |
 | `FlightTest`, `FlightViewModelTest` | Rocket physics against the textbook range formula, asteroid hits, every flight being landable, and the launch screen state |
 | `LearnCatalogTest` | Every teaching card's simulation, prediction and goal matches what the Kotlin code really does |
 | `KotlinTokenizerTest` | Syntax colouring of code snippets |
-| `LessonViewModelTest`, `HomeViewModelTest`, `SettingsViewModelTest` | ViewModel state and the consent logic, using fake repositories |
+| `LessonViewModelTest`, `HomeViewModelTest`, `SettingsViewModelTest`, `StatsViewModelTest` | ViewModel state and the consent logic, using fake repositories |
 
 Instrumented tests (`app/src/androidTest`), run with `./gradlew connectedAndroidTest` on an
 emulator or device:

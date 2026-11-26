@@ -123,6 +123,10 @@
     <string name="stats_first_try_label">Right first time</string>
     <string name="stats_days_label">Days practised</string>
     <string name="stats_tile_description">%1$s: %2$s</string>
+    <string name="stats_adventure_title">Your adventure</string>
+    <string name="stats_missions_label">Planet missions</string>
+    <string name="stats_flights_label">Rocket flights</string>
+    <string name="stats_blocks_label">Code blocks collected</string>
     <string name="stats_topics_title">Accuracy by topic</string>
     <string name="stats_topics_off">Detailed answer history is off, so accuracy by topic is not recorded. You can turn it on in Settings. Lessons work the same either way.</string>
     <string name="stats_topics_empty">Finish a lesson to see your accuracy by topic.</string>

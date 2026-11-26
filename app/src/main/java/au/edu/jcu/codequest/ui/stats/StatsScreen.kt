@@ -92,6 +92,24 @@ fun StatsScreen(uiState: StatsUiState) {
                             modifier = Modifier.weight(1f),
                         )
                     }
+                    SectionTitle(stringResource(R.string.stats_adventure_title))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        StatTile(
+                            value = stringResource(R.string.stats_lessons_value, uiState.missionsCompleted, uiState.missionsTotal),
+                            label = stringResource(R.string.stats_missions_label),
+                            modifier = Modifier.weight(1f),
+                        )
+                        StatTile(
+                            value = stringResource(R.string.stats_lessons_value, uiState.flightsCompleted, uiState.flightsTotal),
+                            label = stringResource(R.string.stats_flights_label),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    StatTile(
+                        value = stringResource(R.string.stats_lessons_value, uiState.blocksCollected, uiState.blocksTotal),
+                        label = stringResource(R.string.stats_blocks_label),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     SectionTitle(stringResource(R.string.stats_topics_title))
                     TopicSection(uiState)
                     SectionTitle(stringResource(R.string.stats_recent_title))
