@@ -1,11 +1,26 @@
 # CodeQuest
 
 CodeQuest is an Android app that teaches Kotlin fundamentals to beginner programmers
-(university students starting their first programming subject). Learners work along a path
-of short lessons, in the style of Duolingo, by reading code, predicting its output and
-rebuilding scrambled programs.
+(university students starting their first programming subject). Learners help Byte, a small
+robot whose ship has crash-landed, by working along a space map of short lessons in the style
+of Duolingo: they step through code, predict and change it, fix bugs and answer questions.
+Each planet ends with a block-programming mission or a boss fight, rocket flights join the
+planets, and a free-build planet lets learners program their own worlds with the code blocks
+they have collected.
 
 Built for **CP3406 Assessment 3: Education App** (James Cook University) by Bohong Hu.
+
+## Screenshots
+
+| Space map | Try it: predict, then change the code | Watch it: run code line by line |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/map.jpg" width="240" alt="Space map with lesson stops, a mission and a rocket flight"> | <img src="docs/screenshots/try-it.jpg" width="240" alt="Try it card showing a type error after changing a value"> | <img src="docs/screenshots/watch-it.jpg" width="240" alt="Watch it card stepping through a string template"> |
+| **Fix the bug** | **Practice question with feedback** | **Result: story and new code blocks** |
+| <img src="docs/screenshots/fix-the-bug.jpg" width="240" alt="Fix the bug card after the bug was found"> | <img src="docs/screenshots/question.jpg" width="240" alt="Multiple choice question answered correctly"> | <img src="docs/screenshots/result.jpg" width="240" alt="Lesson result with ship's log and new code blocks"> |
+| **Planet mission (repeat and if)** | **Boss fight** | **Rocket flight** |
+| <img src="docs/screenshots/mission.jpg" width="240" alt="Crystal canyon mission running a repeat loop"> | <img src="docs/screenshots/boss.jpg" width="240" alt="Laser drone boss fight with an if else program"> | <img src="docs/screenshots/flight.jpg" width="240" alt="Rocket flying over an asteroid to land on the next planet"> |
+| **Free-build planet** | | |
+| <img src="docs/screenshots/free-build.jpg" width="240" alt="Free-build planet editor with build tools"> | | |
 
 ## Core features
 

@@ -295,9 +295,9 @@
     <string name="flight_landed_title">Touchdown!</string>
     <string name="flight_landed_body">Byte landed safely on planet %1$d. Both arguments were just right.</string>
     <string name="flight_short_title">Too short</string>
-    <string name="flight_short_body">The rocket came down before the pad and slipped into a wormhole. Try more power, or an angle closer to 45.</string>
+    <string name="flight_short_body">The rocket came down before the pad and slipped into a wormhole. Try more power. For the same power, 45° flies furthest.</string>
     <string name="flight_far_title">Too far</string>
-    <string name="flight_far_body">The rocket flew past the pad into a wormhole. Try less power, or move the angle further from 45.</string>
+    <string name="flight_far_body">The rocket flew past the pad into a wormhole. Try less power. For the same power, angles further from 45° land shorter.</string>
     <string name="flight_asteroid_title">Asteroid hit</string>
     <string name="flight_asteroid_body">The rocket clipped an asteroid. Fly lower and faster underneath it, or higher over the top.</string>
     <string name="flight_adjust">Adjust and try again</string>
